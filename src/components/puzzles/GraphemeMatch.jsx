@@ -36,12 +36,12 @@ export default function GraphemeMatch({
         animate={{ scale: 1, opacity: 1 }}
         className="text-center mb-12"
       >
-        <p className="text-lg text-gray-600 mb-4">Find the letter that sounds like:</p>
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 shadow-lg">
-          <p className="text-6xl text-purple-900 font-bold">
+        <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">Find the letter that sounds like:</p>
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-3xl p-8 shadow-lg border border-purple-100 dark:border-purple-800">
+          <p className="text-6xl text-purple-900 dark:text-purple-100 font-bold">
             {targetGrapheme.transliteration}
           </p>
-          <p className="text-lg text-purple-600 mt-2">
+          <p className="text-lg text-purple-600 dark:text-purple-300 mt-2">
             ({targetGrapheme.transliteration_simple})
           </p>
         </div>
@@ -60,18 +60,18 @@ export default function GraphemeMatch({
               relative p-8 rounded-2xl border-4 transition-all duration-300
               ${selected?.id === option.id
                 ? isCorrect
-                  ? 'border-green-500 bg-green-50 scale-105'
-                  : 'border-red-500 bg-red-50 scale-95'
-                : 'border-purple-200 bg-white hover:border-purple-400 hover:scale-105'
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/30 dark:border-green-400 scale-105'
+                  : 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-400 scale-95'
+                : 'border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-800 hover:border-purple-400 dark:hover:border-purple-600 hover:scale-105'
               }
               ${showResult && option.glyph === targetGrapheme.glyph && selected?.id !== option.id
-                ? 'border-green-400 bg-green-50'
+                ? 'border-green-400 bg-green-50 dark:bg-green-900/30 dark:border-green-400'
                 : ''
               }
               disabled:cursor-not-allowed
             `}
           >
-            <div className="text-7xl" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
+            <div className="text-7xl dark:text-slate-100" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
               {option.glyph}
             </div>
             
@@ -83,9 +83,9 @@ export default function GraphemeMatch({
                   className="absolute -top-3 -right-3"
                 >
                   {isCorrect ? (
-                    <CheckCircle2 className="w-12 h-12 text-green-500 fill-white" />
+                    <CheckCircle2 className="w-12 h-12 text-green-500 fill-white dark:fill-slate-900" />
                   ) : (
-                    <XCircle className="w-12 h-12 text-red-500 fill-white" />
+                    <XCircle className="w-12 h-12 text-red-500 fill-white dark:fill-slate-900" />
                   )}
                 </motion.div>
               )}
@@ -102,7 +102,7 @@ export default function GraphemeMatch({
             )}
             
             {showResult && (
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 {option.transliteration}
               </p>
             )}
@@ -114,7 +114,7 @@ export default function GraphemeMatch({
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className={`mt-8 text-2xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}
+          className={`mt-8 text-2xl font-bold ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
         >
           {isCorrect ? '🎉 Correct!' : '❌ Try again!'}
         </motion.div>

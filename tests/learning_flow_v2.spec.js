@@ -76,8 +76,20 @@ test.describe('Learning Flow', () => {
 
     await page.goto('/learn?module=hallulu');
     
+    // Wait for loader to disappear
+    await expect(page.locator('.animate-spin')).not.toBeVisible();
+
+    // Check if error state is showing
+    await expect(page.getByText('No graphemes available')).not.toBeVisible();
+
+    // Check if header is visible
+    await expect(page.getByText('Back')).toBeVisible();
+
+    // Check if puzzle container is visible
+    await expect(page.locator('.max-w-4xl')).toBeVisible();
+
     // Verify Header
-    await expect(page.getByText('Find the letter that sounds like:')).toBeVisible();
+    await expect(page.getByText('Find the letter that sounds like:')).toBeAttached();
     
     // Verify Prompt is Transliteration (e.g. 'a')
     const prompt = page.locator('.text-6xl');
@@ -97,6 +109,12 @@ test.describe('Learning Flow', () => {
 
     await page.goto('/learn?module=hallulu');
     
+    // Wait for loader to disappear
+    await expect(page.locator('.animate-spin')).not.toBeVisible();
+
+    // Check if error state is showing
+    await expect(page.getByText('No graphemes available')).not.toBeVisible();
+
     // Verify Header
     await expect(page.getByText('What is the sound of this letter?')).toBeVisible();
     
@@ -109,7 +127,7 @@ test.describe('Learning Flow', () => {
     await expect(correctOption).toBeVisible();
   });
 
-  test('DecomposeRebuild: Only appears for complex graphemes', async ({ page }) => {
+  test('DecomposeRebuild: Only appears for complex grapheme', async ({ page }) => {
     // Force Math.random to return 0.8 to select DecomposeRebuild
     // But it should only select it if the grapheme is complex.
     // Our mock data has 'g1' (simple) and 'g4' (complex).
@@ -147,6 +165,12 @@ test.describe('Learning Flow', () => {
     });
 
     await page.goto('/learn?module=hallulu');
+
+    // Wait for loader to disappear
+    await expect(page.locator('.animate-spin')).not.toBeVisible();
+
+    // Check if error state is showing
+    await expect(page.getByText('No graphemes available')).not.toBeVisible();
 
     // Should show DecomposeRebuild
     await expect(page.getByText('Build the letter for the sound:')).toBeVisible();

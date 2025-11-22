@@ -161,6 +161,14 @@ export default function Learn() {
     
     if (correct) {
       setStars(prev => prev + 3);
+      // Update stars in profile
+      const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+      if (profiles.length > 0) {
+        const currentStars = profiles[0].total_stars || 0;
+        await base44.entities.UserProfile.update(user.email, {
+          total_stars: currentStars + 3
+        });
+      }
     }
     
     await recordSessionMutation.mutateAsync({
@@ -240,17 +248,17 @@ export default function Learn() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-950">
+        <Loader2 className="w-12 h-12 animate-spin text-purple-600 dark:text-purple-400" />
       </div>
     );
   }
 
   if (!currentGrapheme) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-950">
         <div className="text-center">
-          <p className="text-xl text-gray-600 mb-4">No graphemes available for this module</p>
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">No graphemes available for this module</p>
           <Link to={createPageUrl('Home')}>
             <Button>Return Home</Button>
           </Link>
@@ -260,13 +268,13 @@ export default function Learn() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-950 transition-colors duration-300">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" className="gap-2">
+              <Button variant="ghost" className="gap-2 dark:text-slate-200 dark:hover:bg-slate-800">
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </Button>
@@ -275,17 +283,17 @@ export default function Learn() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <span className="font-bold text-lg">{stars}</span>
+                <span className="font-bold text-lg dark:text-slate-200">{stars}</span>
               </div>
               
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 {currentPuzzleIndex + 1} / {graphemes.length}
               </div>
             </div>
           </div>
           
           {/* Progress Bar */}
-          <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+          <div className="mt-4 w-full bg-gray-200 dark:bg-slate-800 rounded-full h-2">
             <motion.div 
               className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
               initial={{ width: 0 }}
@@ -298,7 +306,7 @@ export default function Learn() {
 
       {/* Puzzle Area */}
       <div className="max-w-4xl mx-auto py-8">
-        <AnimatePresence mode="wait">
+        {/* <AnimatePresence mode="wait"> */}
           <motion.div
             key={`${currentGrapheme.id}-${puzzleType}`}
             initial={{ opacity: 0, x: 100 }}
@@ -332,7 +340,7 @@ export default function Learn() {
               />
             )}
           </motion.div>
-        </AnimatePresence>
+        {/* </AnimatePresence> */}
       </div>
     </div>
   );

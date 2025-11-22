@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 export default function Layout() {
   return (
@@ -18,7 +19,10 @@ export default function Layout() {
         }
       `}</style>
       
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300">
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
         <Outlet />
       </div>
     </>

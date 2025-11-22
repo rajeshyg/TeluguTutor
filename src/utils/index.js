@@ -1,9 +1,10 @@
-export const createPageUrl = (page) => {
+export const createPageUrl = (page, params = '') => {
   const routes = {
     'Home': '/',
     'Learn': '/learn',
     'Progress': '/progress',
     'MicroPractice': '/practice'
   };
-  return routes[page] || '/';
+  const baseUrl = routes[page] || '/';
+  return `${baseUrl}${params}`;
 };

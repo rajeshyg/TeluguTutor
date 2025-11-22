@@ -142,13 +142,13 @@ export default function MicroPractice() {
 
   if (!user || strugglingGraphemes.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900/20">
         <div className="text-center">
           <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">All Caught Up!</h2>
-          <p className="text-gray-600 mb-6">No letters need extra practice right now</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">All Caught Up!</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">No letters need extra practice right now</p>
           <Link to={createPageUrl('Home')}>
-            <Button>Return Home</Button>
+            <Button className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600">Return Home</Button>
           </Link>
         </div>
       </div>
@@ -156,9 +156,9 @@ export default function MicroPractice() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50 dark:from-slate-900 dark:via-orange-900/20 dark:to-slate-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-orange-500 to-pink-500 dark:from-orange-700 dark:to-pink-700 text-white shadow-lg">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">
             <Link to={createPageUrl('Home')}>
@@ -192,9 +192,9 @@ export default function MicroPractice() {
       {/* Practice Area */}
       <div className="max-w-4xl mx-auto py-8">
         <div className="mb-6 text-center">
-          <div className="inline-block bg-white rounded-2xl px-6 py-3 shadow-lg">
-            <p className="text-sm text-gray-600 mb-1">Focused Practice</p>
-            <p className="text-lg font-bold text-orange-600">
+          <div className="inline-block bg-white dark:bg-slate-800 rounded-2xl px-6 py-3 shadow-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Focused Practice</p>
+            <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
               Letter {currentIndex + 1} of {strugglingGraphemes.length}
             </p>
           </div>

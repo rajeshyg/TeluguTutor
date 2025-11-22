@@ -8,10 +8,10 @@ export default function ConfidenceIndicator({
   grapheme 
 }) {
   const getColorScheme = () => {
-    if (confidenceScore >= 80) return { bg: 'bg-green-500', text: 'text-green-600', ring: 'ring-green-200' };
-    if (confidenceScore >= 60) return { bg: 'bg-blue-500', text: 'text-blue-600', ring: 'ring-blue-200' };
-    if (confidenceScore >= 40) return { bg: 'bg-yellow-500', text: 'text-yellow-600', ring: 'ring-yellow-200' };
-    return { bg: 'bg-gray-400', text: 'text-gray-600', ring: 'ring-gray-200' };
+    if (confidenceScore >= 80) return { bg: 'bg-green-500', text: 'text-green-600 dark:text-green-400', ring: 'ring-green-200' };
+    if (confidenceScore >= 60) return { bg: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', ring: 'ring-blue-200' };
+    if (confidenceScore >= 40) return { bg: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400', ring: 'ring-yellow-200' };
+    return { bg: 'bg-gray-400', text: 'text-gray-600 dark:text-gray-400', ring: 'ring-gray-200' };
   };
 
   const getMasteryIcon = () => {
@@ -36,9 +36,9 @@ export default function ConfidenceIndicator({
   const colors = getColorScheme();
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-gray-100 shadow-sm">
+    <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-gray-100 dark:border-slate-700 shadow-sm">
       {/* Grapheme Display */}
-      <div className="text-5xl" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
+      <div className="text-5xl text-gray-900 dark:text-white" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
         {grapheme}
       </div>
 
@@ -52,7 +52,7 @@ export default function ConfidenceIndicator({
             stroke="currentColor"
             strokeWidth="6"
             fill="none"
-            className="text-gray-200"
+            className="text-gray-200 dark:text-slate-700"
           />
           <motion.circle
             cx="40"
@@ -83,7 +83,7 @@ export default function ConfidenceIndicator({
           {getMasteryIcon()}
           <span className="font-semibold text-sm">{getMasteryLabel()}</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
           <motion.div
             className={`h-2 rounded-full ${colors.bg}`}
             initial={{ width: 0 }}

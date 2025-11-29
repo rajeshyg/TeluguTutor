@@ -1,0 +1,277 @@
+#!/usr/bin/env node
+
+/**
+ * Fake Production Code Detection Script
+ *
+ * PURPOSE: Detect when code creates fake production UI with hardcoded values
+ * instead of real API/database connectivity.
+ *
+ * IMPORTANT CLARIFICATION:
+ * - This script EXEMPTS test files (.test., .spec., __tests__, etc.)
+ * - Test files using mock data, fixtures, faker is EXPECTED and CORRECT
+ * - This is about catching fake PRODUCTION code, not test mocking
+ *
+ * What this catches in PRODUCTION code:
+ * - Hardcoded arrays that should come from APIs
+ * - faker/chance usage (should only be in tests)
+ * - Variables named mock* in production components
+ * - Fake server responses
+ *
+ * This prevents delivering "100% production ready" code that is fake.
+ */
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+class MockDataDetector {
+  constructor() {
+    this.violations = [];
+    this.srcDir = path.join(__dirname, '..', '..', 'src');
+  }
+
+  // Mock data patterns to detect
+  getMockPatterns() {
+    return {
+      imports: [
+        /import.*from.*['"]\..*mock.*['"]/g,
+        /import.*from.*['"]\..*Mock.*['"]/g,
+        /import.*mockData/g,
+        /import.*MockAPI/g,
+        /import.*mockApiData/g
+      ],
+      variables: [
+        /const.*mock.*=.*\[/g,
+        /const.*mock.*=.*\{/g,
+        /let.*mock.*=.*\[/g,
+        /let.*mock.*=.*\{/g,
+        /var.*mock.*=.*\[/g,
+        /var.*mock.*=.*\{/g
+      ],
+      functionCalls: [
+        /generateMock/g,
+        /getMockData/g,
+        /Math\.random\(\)/g,
+        /faker\./g,
+        /chance\./g
+      ],
+      comments: [
+        /TODO.*mock/g,
+        /FIXME.*mock/g,
+        /HACK.*mock/g
+      ],
+      hardcodedData: [
+        // Pattern for hardcoded user-like objects
+        /\{[^}]*name:.*email:.*\}/g,
+        // Pattern for hardcoded arrays of objects
+        /\[[\s\S]*?\{[^}]*name:.*\}.*?\]/g
+      ]
+    };
+  }
+
+  // Check if file is exempted from mock data detection (legitimate use cases)
+  isExemptedFile(filePath) {
+    // Normalize path to use forward slashes for consistent checking
+    const normalizedPath = filePath.replace(/\\/g, '/');
+
+    // Test files
+    if (normalizedPath.includes('.test.') ||
+        normalizedPath.includes('.spec.') ||
+        normalizedPath.includes('__tests__') ||
+        normalizedPath.includes('/test/') ||
+        normalizedPath.includes('\\test\\') ||
+        normalizedPath.endsWith('.test.ts') ||
+        normalizedPath.endsWith('.test.tsx') ||
+        normalizedPath.endsWith('.spec.ts') ||
+        normalizedPath.endsWith('.spec.tsx') ||
+        normalizedPath.includes('testing') ||
+        normalizedPath.includes('mocks')) {
+      return true;
+    }
+
+    // Legitimate mock data libraries and demo components
+    const exemptedPaths = [
+      'lib/mockData.ts',
+      'lib/mockApiData.ts',
+      'data/teluguGraphemes.js',
+      'entities/'
+    ];
+
+    return exemptedPaths.some(exemptPath => normalizedPath.includes(exemptPath));
+  }
+
+  // Scan a single file for mock data patterns
+  scanFile(filePath) {
+    const relativePath = path.relative(this.srcDir, filePath);
+    const isExemptedFile = this.isExemptedFile(relativePath);
+
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const lines = content.split('\n');
+      const patterns = this.getMockPatterns();
+
+      lines.forEach((line, index) => {
+        const lineNumber = index + 1;
+
+        // Skip mock data detection in exempted files
+        if (isExemptedFile) {
+          return;
+        }
+
+        // Check imports
+        patterns.imports.forEach(pattern => {
+          if (pattern.test(line)) {
+            this.violations.push({
+              type: 'MOCK_DATA_IMPORT',
+              file: relativePath,
+              line: lineNumber,
+              content: line.trim(),
+              severity: 'ERROR',
+              message: 'Mock data import detected in production code'
+            });
+          }
+        });
+
+        // Check variable declarations
+        patterns.variables.forEach(pattern => {
+          if (pattern.test(line)) {
+            this.violations.push({
+              type: 'MOCK_DATA_VARIABLE',
+              file: relativePath,
+              line: lineNumber,
+              content: line.trim(),
+              severity: 'ERROR',
+              message: 'Mock data variable declaration detected'
+            });
+          }
+        });
+
+        // Check function calls
+        patterns.functionCalls.forEach(pattern => {
+          if (pattern.test(line)) {
+            this.violations.push({
+              type: 'MOCK_DATA_FUNCTION',
+              file: relativePath,
+              line: lineNumber,
+              content: line.trim(),
+              severity: 'ERROR',
+              message: 'Mock data function call detected'
+            });
+          }
+        });
+
+        // Check hardcoded data patterns
+        patterns.hardcodedData.forEach(pattern => {
+          if (pattern.test(line)) {
+            this.violations.push({
+              type: 'HARDCODED_MOCK_DATA',
+              file: relativePath,
+              line: lineNumber,
+              content: line.trim(),
+              severity: 'WARNING',
+              message: 'Potential hardcoded mock data detected'
+            });
+          }
+        });
+      });
+
+    } catch (error) {
+      // Skip binary files or files that can't be read
+    }
+  }
+
+  // Main scanning function
+  async scanForMockData() {
+    console.log('🔍 Scanning for fake/mock data in PRODUCTION code...\n');
+    console.log('   (Test files are exempted - mock data in tests is fine)\n');
+
+    // Scan all TypeScript/JavaScript files in src
+    this.scanDirectory(this.srcDir);
+
+    // Generate report
+    this.generateReport();
+
+    return {
+      totalViolations: this.violations.length,
+      violations: this.violations,
+      hasErrors: this.violations.some(v => v.severity === 'ERROR')
+    };
+  }
+
+  // Recursively scan directory
+  scanDirectory(dir) {
+    if (!fs.existsSync(dir)) return;
+    const files = fs.readdirSync(dir);
+
+    files.forEach(file => {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+
+      if (stat.isDirectory() && !file.includes('node_modules')) {
+        this.scanDirectory(filePath);
+      } else if (file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.js')) {
+        this.scanFile(filePath);
+      }
+    });
+  }
+
+  // Generate detailed report
+  generateReport() {
+    const errors = this.violations.filter(v => v.severity === 'ERROR');
+    const warnings = this.violations.filter(v => v.severity === 'WARNING');
+
+    console.log('📋 Fake Production Code Detection Report');
+    console.log('   (Test files are exempt - only production code is checked)');
+    console.log('='.repeat(50));
+
+    if (errors.length > 0) {
+      console.log(`❌ ERRORS FOUND (${errors.length}):`);
+      errors.forEach((violation, index) => {
+        console.log(`${index + 1}. ${violation.type} in ${violation.file}:${violation.line}`);
+        console.log(`   ${violation.message}`);
+        console.log(`   Content: ${violation.content}`);
+        console.log('');
+      });
+    }
+
+    if (warnings.length > 0) {
+      console.log(`⚠️ WARNINGS FOUND (${warnings.length}):`);
+      warnings.forEach((violation, index) => {
+        console.log(`${index + 1}. ${violation.type} in ${violation.file}:${violation.line}`);
+        console.log(`   ${violation.message}`);
+        console.log(`   Content: ${violation.content}`);
+        console.log('');
+      });
+    }
+
+    if (errors.length === 0 && warnings.length === 0) {
+      console.log('✅ No fake production code detected!');
+      console.log('   All production code appears to use real APIs/data.');
+    }
+
+    console.log('='.repeat(50));
+
+    if (errors.length > 0) {
+      console.log('🚫 Fake production code detected!');
+      console.log('Production code must use real API endpoints, not hardcoded/mock data.');
+      console.log('(Note: Test files are exempt - this only applies to production code)');
+      console.log('='.repeat(50));
+    }
+  }
+}
+
+// Run detection if called directly
+const detector = new MockDataDetector();
+detector.scanForMockData().then(result => {
+  if (result.hasErrors) {
+    process.exit(1);
+  }
+}).catch(error => {
+  console.error('❌ Error during mock data detection:', error);
+  process.exit(1);
+});
+
+export default MockDataDetector;

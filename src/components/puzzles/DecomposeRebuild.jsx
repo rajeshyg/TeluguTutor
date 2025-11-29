@@ -62,18 +62,18 @@ export default function DecomposeRebuild({
         animate={{ scale: 1, opacity: 1 }}
         className="text-center mb-8"
       >
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">Build the letter for the sound:</p>
-        <div className="bg-gradient-to-br from-coral-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 rounded-3xl p-8 shadow-lg border border-orange-100 dark:border-orange-800">
-          <div className="text-6xl font-bold text-purple-900 dark:text-purple-100">
+        <p className="text-lg text-muted-foreground mb-4">Build the letter for the sound:</p>
+        <div className="bg-secondary rounded-3xl p-8 shadow-lg border border-border">
+          <div className="text-6xl font-bold text-foreground">
             {targetGrapheme.transliteration}
           </div>
         </div>
       </motion.div>
 
       {/* Build Zone */}
-      <div className="bg-purple-50 dark:bg-purple-900/20 border-4 border-dashed border-purple-300 dark:border-purple-700 rounded-2xl p-6 min-h-[120px] w-full max-w-md mb-6 flex items-center justify-center gap-2 flex-wrap">
+      <div className="bg-secondary border-4 border-dashed border-border rounded-2xl p-6 min-h-[120px] w-full max-w-md mb-6 flex items-center justify-center gap-2 flex-wrap">
         {placedTiles.length === 0 ? (
-          <p className="text-gray-400 dark:text-gray-500 text-lg">Tap components below to build</p>
+          <p className="text-muted-foreground text-lg">Tap components below to build</p>
         ) : (
           placedTiles.map((tile) => (
             <motion.button
@@ -82,7 +82,7 @@ export default function DecomposeRebuild({
               animate={{ scale: 1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => handleRemove(tile.id)}
-              className="bg-white dark:bg-slate-800 border-2 border-purple-400 dark:border-purple-600 rounded-xl px-6 py-4 text-4xl hover:bg-red-50 dark:hover:bg-red-900/30 active:bg-red-100 dark:active:bg-red-900/50 transition-colors text-gray-900 dark:text-gray-100"
+              className="bg-card border-2 border-primary rounded-xl px-6 py-4 text-4xl hover:bg-destructive/10 active:bg-destructive/20 transition-colors text-card-foreground"
               style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}
             >
               {tile.text}
@@ -104,8 +104,8 @@ export default function DecomposeRebuild({
               className={`
                 p-6 rounded-xl border-3 text-4xl transition-all
                 ${isPlaced 
-                  ? 'bg-gray-100 dark:bg-slate-800/50 border-gray-300 dark:border-slate-700 opacity-40 cursor-not-allowed text-gray-400 dark:text-gray-600' 
-                  : 'bg-white dark:bg-slate-800 border-purple-300 dark:border-purple-700 hover:border-purple-500 dark:hover:border-purple-500 active:scale-95 cursor-pointer text-gray-900 dark:text-gray-100'
+                  ? 'bg-muted border-border opacity-40 cursor-not-allowed text-muted-foreground' 
+                  : 'bg-card border-border hover:border-primary active:scale-95 cursor-pointer text-card-foreground'
                 }
                 ${showResult ? 'cursor-not-allowed' : ''}
               `}
@@ -123,7 +123,7 @@ export default function DecomposeRebuild({
           onClick={handleReset}
           variant="outline"
           disabled={placedTiles.length === 0 || showResult}
-          className="gap-2 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="gap-2"
         >
           <RotateCcw className="w-4 h-4" />
           Reset
@@ -133,7 +133,7 @@ export default function DecomposeRebuild({
           onClick={() => setShowHint(!showHint)}
           variant="outline"
           disabled={showResult}
-          className="gap-2 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="gap-2"
         >
           <Lightbulb className="w-4 h-4" />
           Hint
@@ -142,7 +142,7 @@ export default function DecomposeRebuild({
         <Button
           onClick={handleCheck}
           disabled={placedTiles.length === 0 || showResult}
-          className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 gap-2 text-white"
+          className="bg-green-600 hover:bg-green-700 gap-2 text-white"
         >
           <CheckCircle2 className="w-4 h-4" />
           Check
@@ -153,9 +153,9 @@ export default function DecomposeRebuild({
         <motion.div
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-4 text-center"
+          className="mt-4 bg-accent border-2 border-border rounded-lg p-4 text-center"
         >
-          <p className="text-sm text-gray-700 dark:text-yellow-200">
+          <p className="text-sm text-accent-foreground">
             The correct order has <strong>{targetGrapheme.components.length}</strong> parts
           </p>
         </motion.div>
@@ -170,7 +170,7 @@ export default function DecomposeRebuild({
           >
             {isCorrect ? '🎉 Perfect!' : '❌ Not quite right'}
             {!isCorrect && (
-               <div className="text-4xl mt-2 text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
+               <div className="text-4xl mt-2 text-foreground" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
                  {targetGrapheme.glyph}
                </div>
             )}

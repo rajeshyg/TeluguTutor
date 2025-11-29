@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -9,14 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ConfidenceIndicator from '@/components/learning/ConfidenceIndicator';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Progress() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: masteryData = [] } = useQuery({
     queryKey: ['allMastery', user?.email],
@@ -69,60 +66,60 @@ export default function Progress() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900/20 dark:to-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
+      <div className="bg-card border-b border-border shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" className="gap-2 dark:text-slate-200 dark:hover:bg-slate-800">
+              <Button variant="ghost" className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </Button>
             </Link>
             
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Your Progress</h1>
+            <h1 className="text-3xl font-bold text-foreground">Your Progress</h1>
             <div className="w-20" />
           </div>
 
           {/* Stats Overview */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-900/20 border-green-200 dark:border-green-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <Trophy className="w-8 h-8 text-green-600 dark:text-green-400" />
+                <Trophy className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">{stats.mastered}</p>
-                  <p className="text-sm text-green-700 dark:text-green-300">Mastered</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.mastered}</p>
+                  <p className="text-sm text-muted-foreground">Mastered</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                <Target className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{stats.avgConfidence}</p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">Avg Confidence</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.avgConfidence}</p>
+                  <p className="text-sm text-muted-foreground">Avg Confidence</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                <TrendingUp className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{overallAccuracy}%</p>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">Accuracy</p>
+                  <p className="text-3xl font-bold text-foreground">{overallAccuracy}%</p>
+                  <p className="text-sm text-muted-foreground">Accuracy</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/40 dark:to-orange-900/20 border-orange-200 dark:border-orange-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <Award className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                <Award className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{stats.totalAttempts}</p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300">Total Practice</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.totalAttempts}</p>
+                  <p className="text-sm text-muted-foreground">Total Practice</p>
                 </div>
               </div>
             </Card>
@@ -133,12 +130,12 @@ export default function Progress() {
       {/* Mastery Details */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Tabs defaultValue="all" onValueChange={setActiveTab}>
-          <TabsList className="mb-6 bg-gray-100 dark:bg-slate-800">
-            <TabsTrigger value="all" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white">All ({masteryData.length})</TabsTrigger>
-            <TabsTrigger value="mastered" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white">Mastered ({stats.mastered})</TabsTrigger>
-            <TabsTrigger value="proficient" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white">Proficient ({stats.proficient})</TabsTrigger>
-            <TabsTrigger value="practicing" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white">Practicing ({stats.practicing})</TabsTrigger>
-            <TabsTrigger value="learning" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white">Learning ({stats.learning})</TabsTrigger>
+          <TabsList className="mb-6 bg-muted">
+            <TabsTrigger value="all">All ({masteryData.length})</TabsTrigger>
+            <TabsTrigger value="mastered">Mastered ({stats.mastered})</TabsTrigger>
+            <TabsTrigger value="proficient">Proficient ({stats.proficient})</TabsTrigger>
+            <TabsTrigger value="practicing">Practicing ({stats.practicing})</TabsTrigger>
+            <TabsTrigger value="learning">Learning ({stats.learning})</TabsTrigger>
           </TabsList>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,7 +156,7 @@ export default function Progress() {
                     grapheme={grapheme.glyph}
                   />
                   
-                  <div className="mt-2 px-4 py-2 bg-gray-50 dark:bg-slate-800/50 rounded-lg text-xs text-gray-600 dark:text-gray-400">
+                  <div className="mt-2 px-4 py-2 bg-muted rounded-lg text-xs text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Attempts: {mastery.total_attempts}</span>
                       <span>Success: {mastery.successful_attempts}</span>
@@ -173,9 +170,9 @@ export default function Progress() {
 
           {getFilteredMastery().length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">No graphemes in this category yet</p>
+              <p className="text-muted-foreground text-lg">No graphemes in this category yet</p>
               <Link to={createPageUrl('Home')}>
-                <Button className="mt-4 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600">Start Learning</Button>
+                <Button className="mt-4">Start Learning</Button>
               </Link>
             </div>
           )}

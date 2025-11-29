@@ -36,9 +36,9 @@ export default function TransliterationChallenge({
         animate={{ scale: 1, opacity: 1 }}
         className="text-center mb-12"
       >
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">What is the sound of this letter?</p>
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-3xl p-8 shadow-lg border border-blue-100 dark:border-blue-800">
-          <p className="text-8xl text-blue-900 dark:text-blue-100 font-bold" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
+        <p className="text-lg text-muted-foreground mb-4">What is the sound of this letter?</p>
+        <div className="bg-secondary rounded-3xl p-8 shadow-lg border border-border">
+          <p className="text-8xl text-foreground font-bold" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
             {targetGrapheme.glyph}
           </p>
         </div>
@@ -59,7 +59,7 @@ export default function TransliterationChallenge({
                 ? isCorrect
                   ? 'border-green-500 bg-green-50 dark:bg-green-900/30 dark:border-green-400 scale-105'
                   : 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-400 scale-95'
-                : 'border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-600 hover:scale-105'
+                : 'border-border bg-card hover:border-primary hover:scale-105'
               }
               ${showResult && option === targetGrapheme.transliteration && selected !== option
                 ? 'border-green-400 bg-green-50 dark:bg-green-900/30 dark:border-green-400'
@@ -68,7 +68,7 @@ export default function TransliterationChallenge({
               disabled:cursor-not-allowed
             `}
           >
-            <div className="text-3xl font-bold text-gray-800 dark:text-slate-100">
+            <div className="text-3xl font-bold text-card-foreground">
               {option}
             </div>
             
@@ -80,9 +80,9 @@ export default function TransliterationChallenge({
                   className="absolute -top-3 -right-3"
                 >
                   {isCorrect ? (
-                    <CheckCircle2 className="w-8 h-8 text-green-500 fill-white dark:fill-slate-900" />
+                    <CheckCircle2 className="w-8 h-8 text-green-500 fill-card" />
                   ) : (
-                    <XCircle className="w-8 h-8 text-red-500 fill-white dark:fill-slate-900" />
+                    <XCircle className="w-8 h-8 text-red-500 fill-card" />
                   )}
                 </motion.div>
               )}

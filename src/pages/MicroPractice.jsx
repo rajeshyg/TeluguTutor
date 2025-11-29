@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -8,18 +8,15 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import GraphemeMatch from '@/components/puzzles/GraphemeMatch';
 import DecomposeRebuild from '@/components/puzzles/DecomposeRebuild';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function MicroPractice() {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [puzzleType, setPuzzleType] = useState('grapheme_match');
   const [responseTime, setResponseTime] = useState(0);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: strugglingGraphemes = [] } = useQuery({
     queryKey: ['strugglingForPractice', user?.email],
@@ -142,13 +139,13 @@ export default function MicroPractice() {
 
   if (!user || strugglingGraphemes.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-slate-900 dark:to-purple-900/20">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">All Caught Up!</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">No letters need extra practice right now</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">All Caught Up!</h2>
+          <p className="text-muted-foreground mb-6">No letters need extra practice right now</p>
           <Link to={createPageUrl('Home')}>
-            <Button className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600">Return Home</Button>
+            <Button>Return Home</Button>
           </Link>
         </div>
       </div>
@@ -156,13 +153,13 @@ export default function MicroPractice() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50 dark:from-slate-900 dark:via-orange-900/20 dark:to-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-pink-500 dark:from-orange-700 dark:to-pink-700 text-white shadow-lg">
+      <div className="bg-primary text-primary-foreground shadow-lg">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-4">
             <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" className="text-white hover:bg-white/20 gap-2">
+              <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/20 gap-2">
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </Button>
@@ -179,9 +176,9 @@ export default function MicroPractice() {
             </div>
           </div>
           
-          <div className="w-full bg-white/20 rounded-full h-3">
+          <div className="w-full bg-primary-foreground/20 rounded-full h-3">
             <motion.div 
-              className="bg-white h-3 rounded-full"
+              className="bg-primary-foreground h-3 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentIndex + 1) / strugglingGraphemes.length) * 100}%` }}
             />
@@ -192,9 +189,9 @@ export default function MicroPractice() {
       {/* Practice Area */}
       <div className="max-w-4xl mx-auto py-8">
         <div className="mb-6 text-center">
-          <div className="inline-block bg-white dark:bg-slate-800 rounded-2xl px-6 py-3 shadow-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Focused Practice</p>
-            <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+          <div className="inline-block bg-card rounded-2xl px-6 py-3 shadow-lg">
+            <p className="text-sm text-muted-foreground mb-1">Focused Practice</p>
+            <p className="text-lg font-bold text-primary">
               Letter {currentIndex + 1} of {strugglingGraphemes.length}
             </p>
           </div>

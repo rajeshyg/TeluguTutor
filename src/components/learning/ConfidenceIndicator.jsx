@@ -36,9 +36,9 @@ export default function ConfidenceIndicator({
   const colors = getColorScheme();
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-gray-100 dark:border-slate-700 shadow-sm">
+    <div className="flex items-center gap-4 p-4 bg-card rounded-xl border-2 border-border shadow-sm">
       {/* Grapheme Display */}
-      <div className="text-5xl text-gray-900 dark:text-white" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
+      <div className="text-5xl text-card-foreground" style={{ fontFamily: "'Noto Sans Telugu', sans-serif" }}>
         {grapheme}
       </div>
 
@@ -52,7 +52,7 @@ export default function ConfidenceIndicator({
             stroke="currentColor"
             strokeWidth="6"
             fill="none"
-            className="text-gray-200 dark:text-slate-700"
+            className="text-muted"
           />
           <motion.circle
             cx="40"
@@ -83,7 +83,7 @@ export default function ConfidenceIndicator({
           {getMasteryIcon()}
           <span className="font-semibold text-sm">{getMasteryLabel()}</span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+        <div className="w-full bg-muted rounded-full h-2">
           <motion.div
             className={`h-2 rounded-full ${colors.bg}`}
             initial={{ width: 0 }}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -11,6 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AdaptivePracticeAlert from '@/components/learning/AdaptivePracticeAlert';
+import { TELUGU_GRAPHEMES } from '@/data/teluguGraphemes';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MODULES = [
   { 
@@ -65,12 +67,8 @@ const MODULES = [
 ];
 
 export default function Home() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showAdaptivePractice, setShowAdaptivePractice] = useState(false);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile', user?.email],
@@ -110,15 +108,34 @@ export default function Home() {
     }
   }, [strugglingGraphemes]);
 
-  const getModuleProgress = (moduleId) => {
-    const moduleMastery = masteryData.filter(m => {
-      // This would require joining with grapheme data - simplified for now
-      return m.confidence_score > 0;
+  // Create a map of grapheme_id to module for efficient lookup
+  const graphemeModuleMap = useMemo(() => {
+    const map = new Map();
+    TELUGU_GRAPHEMES.forEach(g => map.set(g.id, g.module));
+    return map;
+  }, []);
+
+  // Get total graphemes per module
+  const moduleGraphemeCounts = useMemo(() => {
+    const counts = {};
+    TELUGU_GRAPHEMES.forEach(g => {
+      counts[g.module] = (counts[g.module] || 0) + 1;
     });
+    return counts;
+  }, []);
+
+  const getModuleProgress = (moduleId) => {
+    // Filter mastery data to only include graphemes from this specific module
+    const moduleMastery = masteryData.filter(m => {
+      const graphemeModule = graphemeModuleMap.get(m.grapheme_id);
+      return graphemeModule === moduleId && m.confidence_score > 0;
+    });
+    
+    const totalInModule = moduleGraphemeCounts[moduleId] || 10;
     
     return {
       completed: moduleMastery.filter(m => m.confidence_score >= 80).length,
-      total: Math.max(moduleMastery.length, 10),
+      total: totalInModule,
       avgConfidence: moduleMastery.length > 0 
         ? moduleMastery.reduce((sum, m) => sum + m.confidence_score, 0) / moduleMastery.length 
         : 0
@@ -133,20 +150,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900/20 dark:to-slate-900">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm">
+      <div className="bg-card border-b border-border shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-3xl font-bold text-foreground">
                 Telugu Learning
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-muted-foreground mt-1">
                 Welcome back, {profile?.display_name || 'Learner'}!
               </p>
             </div>
             
             <Link to={createPageUrl('Progress')}>
-              <Button className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 gap-2 text-white">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
                 <Trophy className="w-4 h-4" />
                 View Progress
               </Button>
@@ -155,42 +172,42 @@ export default function Home() {
 
           {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-4 mt-6">
-            <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <div className="bg-purple-500 p-2 rounded-lg">
-                  <Trophy className="w-5 h-5 text-white" />
+                <div className="bg-primary p-2 rounded-lg">
+                  <Trophy className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{profile?.total_stars || 0}</p>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">Stars Earned</p>
+                  <p className="text-2xl font-bold text-foreground">{profile?.total_stars || 0}</p>
+                  <p className="text-sm text-muted-foreground">Stars Earned</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <div className="bg-blue-500 p-2 rounded-lg">
-                  <Target className="w-5 h-5 text-white" />
+                <div className="bg-accent p-2 rounded-lg">
+                  <Target className="w-5 h-5 text-accent-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                  <p className="text-2xl font-bold text-foreground">
                     {masteryData.filter(m => m.mastery_level === 'mastered').length}
                   </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">Letters Mastered</p>
+                  <p className="text-sm text-muted-foreground">Letters Mastered</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-900/20 border-green-200 dark:border-green-800">
+            <Card className="p-4 bg-secondary/50 border-border">
               <div className="flex items-center gap-3">
-                <div className="bg-green-500 p-2 rounded-lg">
-                  <Clock className="w-5 h-5 text-white" />
+                <div className="bg-muted p-2 rounded-lg">
+                  <Clock className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+                  <p className="text-2xl font-bold text-foreground">
                     {profile?.total_practice_time || 0}
                   </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">Minutes Practiced</p>
+                  <p className="text-sm text-muted-foreground">Minutes Practiced</p>
                 </div>
               </div>
             </Card>
@@ -200,7 +217,7 @@ export default function Home() {
 
       {/* Modules Grid */}
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Learning Modules</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6">Learning Modules</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {MODULES.map((module, index) => {
@@ -220,9 +237,9 @@ export default function Home() {
                   className={!unlocked ? 'pointer-events-none' : ''}
                 >
                   <Card className={`
-                    p-6 h-full transition-all duration-300 cursor-pointer bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700
+                    p-6 h-full transition-all duration-300 cursor-pointer bg-card border-border
                     ${unlocked 
-                      ? 'hover:scale-105 hover:shadow-xl dark:hover:shadow-slate-900/50' 
+                      ? 'hover:scale-105 hover:shadow-xl' 
                       : 'opacity-60'
                     }
                   `}>
@@ -238,31 +255,31 @@ export default function Home() {
                       <Icon className="w-12 h-12 text-white" />
                     </div>
 
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-xl font-bold text-card-foreground mb-2">
                       {module.name}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       {module.description}
                     </p>
 
                     {unlocked ? (
                       <>
                         <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-gray-600 dark:text-gray-400">Progress</span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-semibold text-foreground">
                             {progress.completed}/{progress.total}
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                        <div className="w-full bg-muted rounded-full h-2">
                           <div 
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all"
+                            className="bg-primary h-2 rounded-full transition-all"
                             style={{ width: `${(progress.completed / progress.total) * 100}%` }}
                           />
                         </div>
                       </>
                     ) : (
-                      <div className="text-center py-2 bg-gray-100 dark:bg-slate-700 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="text-center py-2 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground">
                           Master more letters to unlock
                         </p>
                       </div>

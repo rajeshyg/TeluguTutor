@@ -3,7 +3,8 @@ export const createPageUrl = (page, params = '') => {
     'Home': '/',
     'Learn': '/learn',
     'Progress': '/progress',
-    'MicroPractice': '/practice'
+    'MicroPractice': '/practice',
+    'Login': '/login'
   };
   const baseUrl = routes[page] || '/';
   return `${baseUrl}${params}`;

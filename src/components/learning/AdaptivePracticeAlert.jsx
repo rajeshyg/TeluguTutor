@@ -52,7 +52,7 @@ export default function AdaptivePracticeAlert({
             <div className="flex gap-2">
               <Button
                 onClick={onStartPractice}
-                className="bg-white text-orange-600 hover:bg-gray-100 flex-1"
+                className="bg-card text-primary hover:bg-card/90 flex-1"
               >
                 Start Practice
               </Button>

@@ -3,7 +3,9 @@ import { TELUGU_GRAPHEMES } from '../data/teluguGraphemes';
 const STORAGE_KEYS = {
   MASTERY: 'telugu_tutor_mastery',
   PROFILE: 'telugu_tutor_profile',
-  SESSIONS: 'telugu_tutor_sessions'
+  SESSIONS: 'telugu_tutor_sessions',
+  CURRENT_USER: 'telugu_tutor_current_user',
+  USERS: 'telugu_tutor_users'
 };
 
 const getStorage = (key, defaultVal = []) => {
@@ -17,18 +19,39 @@ const setStorage = (key, val) => {
   localStorage.setItem(key, JSON.stringify(val));
 };
 
+const removeStorage = (key) => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+};
+
+// Simple hash function for passwords (NOT for production - use bcrypt in real apps)
+const simpleHash = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(16);
+};
+
 const defaultBase44 = {
   auth: {
+    // Get currently logged in user
     me: async () => {
-      const email = 'test@example.com';
-      // Ensure profile exists
+      const currentUser = getStorage(STORAGE_KEYS.CURRENT_USER, null);
+      if (!currentUser) {
+        return null;
+      }
+      
+      // Ensure profile exists for current user
       const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-      let profile = profiles.find(p => p.user_email === email);
+      let profile = profiles.find(p => p.user_email === currentUser.email);
       
       if (!profile) {
         profile = {
-          user_email: email,
-          display_name: 'Test User',
+          user_email: currentUser.email,
+          display_name: currentUser.name || currentUser.email.split('@')[0],
           total_stars: 0,
           total_practice_time: 0,
           badges_earned: [],
@@ -39,7 +62,105 @@ const defaultBase44 = {
         setStorage(STORAGE_KEYS.PROFILE, profiles);
       }
       
-      return { email, name: profile.display_name };
+      return { email: currentUser.email, name: profile.display_name };
+    },
+    
+    // Sign up a new user
+    signup: async (email, password, displayName) => {
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+      
+      const users = getStorage(STORAGE_KEYS.USERS, []);
+      
+      // Check if user already exists
+      if (users.find(u => u.email === email)) {
+        throw new Error('User already exists');
+      }
+      
+      // Create new user
+      const newUser = {
+        email,
+        passwordHash: simpleHash(password),
+        name: displayName || email.split('@')[0],
+        createdAt: new Date().toISOString()
+      };
+      users.push(newUser);
+      setStorage(STORAGE_KEYS.USERS, users);
+      
+      // Auto-login after signup
+      const userData = { email: newUser.email, name: newUser.name };
+      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
+      
+      // Create profile for new user
+      const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+      const profile = {
+        user_email: email,
+        display_name: newUser.name,
+        total_stars: 0,
+        total_practice_time: 0,
+        badges_earned: [],
+        unlocked_word_puzzles: false,
+        last_active: new Date().toISOString()
+      };
+      profiles.push(profile);
+      setStorage(STORAGE_KEYS.PROFILE, profiles);
+      
+      return userData;
+    },
+    
+    // Login existing user
+    login: async (email, password) => {
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+      
+      const users = getStorage(STORAGE_KEYS.USERS, []);
+      const user = users.find(u => u.email === email);
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      if (user.passwordHash !== simpleHash(password)) {
+        throw new Error('Invalid password');
+      }
+      
+      // Set current user
+      const userData = { email: user.email, name: user.name };
+      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
+      
+      return userData;
+    },
+    
+    // Logout current user
+    logout: async () => {
+      removeStorage(STORAGE_KEYS.CURRENT_USER);
+      return true;
+    },
+    
+    // Continue as guest (creates temporary session)
+    continueAsGuest: async () => {
+      const guestEmail = `guest_${Date.now()}@telugututor.local`;
+      const userData = { email: guestEmail, name: 'Guest Learner', isGuest: true };
+      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
+      
+      // Create guest profile
+      const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+      const profile = {
+        user_email: guestEmail,
+        display_name: 'Guest Learner',
+        total_stars: 0,
+        total_practice_time: 0,
+        badges_earned: [],
+        unlocked_word_puzzles: false,
+        last_active: new Date().toISOString(),
+        isGuest: true
+      };
+      profiles.push(profile);
+      setStorage(STORAGE_KEYS.PROFILE, profiles);
+      
+      return userData;
     }
   },
   entities: {

@@ -36,7 +36,7 @@ Future: Plan for admin features to manage grapheme data and view analytics
 ## Critical Rules
 
 1. **No Backend**: This is frontend-only (React SPA)
-2. **Port**: Vite runs on **5174** (LOCKED)
+2. **Port**: Vite runs on **5175** (LOCKED)
 3. **State**: Use React hooks + React Query for data
 4. **Styling**: Tailwind CSS + shadcn/ui only
 5. **Data**: Grapheme data in `src/data/teluguGraphemes.js`
@@ -63,7 +63,7 @@ Future: Plan for admin features to manage grapheme data and view analytics
 
 **Skills** (always check first):
 
-- `project-constraints/` - LOCKED infrastructure (port 5174, framework)
+- `project-constraints/` - LOCKED infrastructure (port 5175, framework)
 - `duplication-prevention/` - Search before creating files
 - `coding-standards/` - JavaScript/React patterns
 - `security-rules/` - Input validation, localStorage safety

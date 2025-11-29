@@ -28,7 +28,7 @@
 
 **Frontend Only**: No backend API (state in React hooks + localStorage)
 
-**Port**: 5174 (LOCKED - never change)
+**Port**: 5175 (LOCKED - never change)
 
 ---
 
@@ -83,7 +83,7 @@ TeluguTutor/
 │       └── context/
 │           └── always-on.md
 ├── tests/                            # E2E tests (Playwright)
-├── vite.config.js                    # 🔒 LOCKED - port 5174
+├── vite.config.js                    # 🔒 LOCKED - port 5175
 ├── tailwind.config.js                # Theme configuration
 ├── package.json                      # 🔒 Scripts locked
 └── playwright.config.cjs             # Test configuration
@@ -95,9 +95,9 @@ TeluguTutor/
 
 **NEVER CHANGE**:
 
-1. **Port 5174**: Vite dev server (see `vite.config.js`)
+1. **Port 5175**: Vite dev server (see `vite.config.js`)
    ```javascript
-   server: { port: 5174 }
+   server: { port: 5175 }
    ```
 
 2. **Package Scripts**: (see `package.json`)
@@ -209,7 +209,7 @@ className={cn(
 
 ```bash
 # Development
-npm run dev          # Start Vite on port 5174
+npm run dev          # Start Vite on port 5175
 
 # Testing
 npm run test         # Run Playwright tests

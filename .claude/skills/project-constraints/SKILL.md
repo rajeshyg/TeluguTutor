@@ -20,7 +20,7 @@
 
 | Service               | Port     | Status    | Purpose          |
 | --------------------- | -------- | --------- | ---------------- |
-| **Frontend (Vite)**   | **5174** | 🔒 LOCKED | React dev server |
+| **Frontend (Vite)**   | **5175** | 🔒 LOCKED | React dev server |
 
 **Configuration Files**:
 
@@ -77,7 +77,7 @@ These actions require explicit user approval:
 
 ```
 STOP: You are modifying critical package.json scripts.
-Current: npm run dev launches Vite on port 5174
+Current: npm run dev launches Vite on port 5175
 
 Impact: [Explain what will break]
 Recommendation: [Alternative approach]

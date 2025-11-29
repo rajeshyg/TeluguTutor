@@ -72,7 +72,7 @@ test.describe('Learning Flow', () => {
   });
 
   test('GraphemeMatch should show transliteration and hide glyph in question', async ({ page }) => {
-    await page.goto('http://localhost:5174/learn?module=hallulu');
+    await page.goto('http://localhost:5175/learn?module=hallulu');
     
     // Wait for loading to finish
     await expect(page.getByText('No graphemes available')).not.toBeVisible();
@@ -106,7 +106,7 @@ test.describe('Learning Flow', () => {
     // For this test, let's assume we can encounter it.
     // In a real scenario, we might inject a script to force the state.
     
-    await page.goto('http://localhost:5174/learn?module=hallulu');
+    await page.goto('http://localhost:5175/learn?module=hallulu');
     
     // Look for TransliterationChallenge header
     // "What is the sound of this letter?"

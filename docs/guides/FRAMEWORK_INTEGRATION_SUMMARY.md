@@ -12,9 +12,9 @@
 
 #### project-constraints/SKILL.md
 - **Source**: OutreachTracker-v2 framework consolidation
-- **Adapted For**: TeluguTutor (frontend-only, port 5174)
+- **Adapted For**: TeluguTutor (frontend-only, port 5175)
 - **Contents**:
-  - LOCKED constraints (port 5174 ✅)
+  - LOCKED constraints (port 5175 ✅)
   - Project boundaries and structure
   - File registry organized by component type
   - Decision triggers for common scenarios
@@ -23,7 +23,7 @@
 **Key Differences from Original**:
 - Removed backend server constraints (no Express backend)
 - Adjusted for React + Vite-only architecture
-- Port changed to 5174 (TeluguTutor's Vite port)
+- Port changed to 5175 (TeluguTutor's Vite port)
 - File structure reflects learning domain (components/learning, puzzles, etc.)
 
 #### security-rules/SKILL.md
@@ -156,7 +156,7 @@ TeluguTutor/
 
 ### TeluguTutor Specific
 
-1. **Port**: 5174 (Vite dev server)
+1. **Port**: 5175 (Vite dev server)
    - Configuration: `vite.config.js:6-9`
    - Cannot be changed without breaking development workflow
 

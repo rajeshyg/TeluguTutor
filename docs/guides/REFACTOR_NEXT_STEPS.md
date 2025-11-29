@@ -250,46 +250,37 @@ Verify accuracy of Telugu grapheme metadata in `src/data/teluguGraphemes.js`
 Updated `teluguGraphemes.js` with verified data
 ```
 
-### R-002: Market Research - Feature Quality
-**Location**: `docs/specs/research/market-quality.md`
+### R-002: Market Research – Feature Quality & Ideas (**HIGH PRIORITY – NEXT**)
+**Location**: `docs/specs/research/market-quality.md`, `docs/specs/research/market-features.md`
 ```markdown
-# Market Research - Quality Standards
+# Market Research – Quality & Features
 
 ## Objective
-Benchmark against existing Telugu learning apps
+Benchmark TeluguTutor against top general language-learning apps (Duolingo, Memrise, Babbel, Busuu, Mondly, Drops). Do NOT focus on Telugu-specific apps.
 
 ## Competitors to Analyze
-- [ ] Duolingo (if Telugu available)
-- [ ] Google Learn Telugu
-- [ ] Other Telugu learning apps
+- [ ] Duolingo
+- [ ] Memrise
+- [ ] Babbel
+- [ ] Busuu
+- [ ] Mondly
+- [ ] Drops
 
 ## Quality Metrics
 - Learning progression design
-- Gamification effectiveness
-- UI/UX patterns
-- Accessibility standards
+- Gamification effectiveness (streaks, badges, leaderboards, rewards)
+- UI/UX patterns (onboarding, navigation, microcopy, visuals)
+- Accessibility standards (WCAG 2.1 AA)
+- Assessment methods, retention hooks, content types
 
-## Deliverable
-Quality improvement recommendations
-```
+## Feature Inventory
+- Lessons, exercises, audio, spaced repetition, social, notifications, offline support
 
-### R-003: Market Research - Feature Ideas
-**Location**: `docs/specs/research/market-features.md`
-```markdown
-# Market Research - Feature Ideas
-
-## Objective
-Identify valuable features from competitors
-
-## Feature Categories
-- [ ] Audio pronunciation
-- [ ] Handwriting recognition
-- [ ] Spaced repetition algorithms
-- [ ] Social/competitive features
-- [ ] Offline support
-
-## Deliverable
-Prioritized feature backlog with specs
+## Deliverables
+- Quality improvement recommendations
+- Prioritized feature backlog (Must/Should/Nice-to-have)
+- Suggested KPIs (DAU, retention, lesson completion, accuracy)
+- Update `docs/guides/REFACTOR_NEXT_STEPS.md` with summary and owner
 ```
 
 ---

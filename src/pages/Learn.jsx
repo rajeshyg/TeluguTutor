@@ -247,7 +247,7 @@ export default function Learn() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full h-full flex items-center justify-center bg-background">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     );
@@ -255,7 +255,7 @@ export default function Learn() {
 
   if (!currentGrapheme) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full h-full flex items-center justify-center bg-background">
         <div className="text-center">
           <p className="text-xl text-muted-foreground mb-4">No graphemes available for this module</p>
           <Link to={createPageUrl('Home')}>
@@ -267,10 +267,10 @@ export default function Learn() {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    <div className="w-full h-full bg-background transition-colors duration-300 overflow-y-auto">
       {/* Header */}
       <div className="bg-card border-b border-border shadow-sm transition-colors duration-300">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <Link to={createPageUrl('Home')}>
               <Button variant="ghost" className="gap-2">
@@ -281,7 +281,7 @@ export default function Learn() {
             
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                <Star className="w-5 h-5 text-warning fill-warning" />
                 <span className="font-bold text-lg text-foreground">{stars}</span>
               </div>
               
@@ -292,9 +292,9 @@ export default function Learn() {
           </div>
           
           {/* Progress Bar */}
-          <div className="mt-4 w-full bg-muted rounded-full h-2">
+          <div className="mt-3 w-full bg-muted rounded-full h-1.5">
             <motion.div 
-              className="bg-primary h-2 rounded-full"
+              className="bg-primary h-1.5 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentPuzzleIndex + 1) / graphemes.length) * 100}%` }}
               transition={{ duration: 0.5 }}
@@ -304,7 +304,7 @@ export default function Learn() {
       </div>
 
       {/* Puzzle Area */}
-      <div className="max-w-4xl mx-auto py-8">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* <AnimatePresence mode="wait"> */}
           <motion.div
             key={`${currentGrapheme.id}-${puzzleType}`}

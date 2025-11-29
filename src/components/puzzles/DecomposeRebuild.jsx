@@ -142,7 +142,7 @@ export default function DecomposeRebuild({
         <Button
           onClick={handleCheck}
           disabled={placedTiles.length === 0 || showResult}
-          className="bg-green-600 hover:bg-green-700 gap-2 text-white"
+          className="bg-success hover:bg-success/90 gap-2 text-success-foreground"
         >
           <CheckCircle2 className="w-4 h-4" />
           Check
@@ -166,7 +166,7 @@ export default function DecomposeRebuild({
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className={`mt-6 text-2xl font-bold ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+            className={`mt-6 text-2xl font-bold ${isCorrect ? 'text-success' : 'text-error'}`}
           >
             {isCorrect ? '🎉 Perfect!' : '❌ Not quite right'}
             {!isCorrect && (

@@ -66,11 +66,11 @@ export default function Progress() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="w-full h-full bg-background overflow-y-auto">
       {/* Header */}
       <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between mb-4">
             <Link to={createPageUrl('Home')}>
               <Button variant="ghost" className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
@@ -78,48 +78,48 @@ export default function Progress() {
               </Button>
             </Link>
             
-            <h1 className="text-3xl font-bold text-foreground">Your Progress</h1>
-            <div className="w-20" />
+            <h1 className="text-2xl font-bold text-foreground">Your Progress</h1>
+            <div className="w-16" />
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <Trophy className="w-8 h-8 text-primary" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{stats.mastered}</p>
-                  <p className="text-sm text-muted-foreground">Mastered</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.mastered}</p>
+                  <p className="text-xs text-muted-foreground">Mastered</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <Target className="w-8 h-8 text-primary" />
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <Target className="w-6 h-6 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{stats.avgConfidence}</p>
-                  <p className="text-sm text-muted-foreground">Avg Confidence</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.avgConfidence}</p>
+                  <p className="text-xs text-muted-foreground">Avg Confidence</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-primary" />
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{overallAccuracy}%</p>
-                  <p className="text-sm text-muted-foreground">Accuracy</p>
+                  <p className="text-2xl font-bold text-foreground">{overallAccuracy}%</p>
+                  <p className="text-xs text-muted-foreground">Accuracy</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <Award className="w-8 h-8 text-primary" />
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <Award className="w-6 h-6 text-primary" />
                 <div>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalAttempts}</p>
-                  <p className="text-sm text-muted-foreground">Total Practice</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalAttempts}</p>
+                  <p className="text-xs text-muted-foreground">Total Practice</p>
                 </div>
               </div>
             </Card>
@@ -128,9 +128,9 @@ export default function Progress() {
       </div>
 
       {/* Mastery Details */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <Tabs defaultValue="all" onValueChange={setActiveTab}>
-          <TabsList className="mb-6 bg-muted">
+          <TabsList className="mb-4 bg-muted">
             <TabsTrigger value="all">All ({masteryData.length})</TabsTrigger>
             <TabsTrigger value="mastered">Mastered ({stats.mastered})</TabsTrigger>
             <TabsTrigger value="proficient">Proficient ({stats.proficient})</TabsTrigger>
@@ -138,7 +138,7 @@ export default function Progress() {
             <TabsTrigger value="learning">Learning ({stats.learning})</TabsTrigger>
           </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {getFilteredMastery().map((mastery, index) => {
               const grapheme = getGraphemeData(mastery.grapheme_id);
               if (!grapheme) return null;
@@ -169,10 +169,10 @@ export default function Progress() {
           </div>
 
           {getFilteredMastery().length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">No graphemes in this category yet</p>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No graphemes in this category yet</p>
               <Link to={createPageUrl('Home')}>
-                <Button className="mt-4">Start Learning</Button>
+                <Button className="mt-3">Start Learning</Button>
               </Link>
             </div>
           )}

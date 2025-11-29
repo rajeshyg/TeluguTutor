@@ -31,29 +31,39 @@ export default function Layout() {
         }
       `}</style>
       
-      <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-          {user && (
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-secondary/50 rounded-full text-sm text-muted-foreground">
-                <User className="w-3.5 h-3.5" />
-                <span>{user.name || user.email}</span>
-                {isGuest && <span className="text-xs">(Guest)</span>}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground"
-                title="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
+      <div className="flex flex-col w-full h-full bg-background text-foreground transition-colors duration-300">
+        <header className="w-full bg-card border-b border-border">
+          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-semibold text-foreground">Telugu Tutor</h1>
             </div>
-          )}
-          <ThemeToggle />
-        </div>
-        <Outlet />
+            <div className="flex items-center gap-2">
+              {user && (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-secondary/50 rounded-full text-sm text-muted-foreground">
+                    <User className="w-3.5 h-3.5" />
+                    <span>{user.name || user.email}</span>
+                    {isGuest && <span className="text-xs">(Guest)</span>}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleLogout}
+                    className="text-muted-foreground hover:text-foreground"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
+          <Outlet />
+        </main>
       </div>
     </>
   );

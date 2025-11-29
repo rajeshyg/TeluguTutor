@@ -8,10 +8,10 @@ export default function ConfidenceIndicator({
   grapheme 
 }) {
   const getColorScheme = () => {
-    if (confidenceScore >= 80) return { bg: 'bg-green-500', text: 'text-green-600 dark:text-green-400', ring: 'ring-green-200' };
-    if (confidenceScore >= 60) return { bg: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', ring: 'ring-blue-200' };
-    if (confidenceScore >= 40) return { bg: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400', ring: 'ring-yellow-200' };
-    return { bg: 'bg-gray-400', text: 'text-gray-600 dark:text-gray-400', ring: 'ring-gray-200' };
+    if (confidenceScore >= 80) return { bg: 'bg-success', text: 'text-success', ring: 'ring-success/30' };
+    if (confidenceScore >= 60) return { bg: 'bg-primary', text: 'text-primary', ring: 'ring-primary/30' };
+    if (confidenceScore >= 40) return { bg: 'bg-warning', text: 'text-warning', ring: 'ring-warning/30' };
+    return { bg: 'bg-muted', text: 'text-muted-foreground', ring: 'ring-muted' };
   };
 
   const getMasteryIcon = () => {

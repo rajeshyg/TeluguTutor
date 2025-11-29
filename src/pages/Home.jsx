@@ -148,16 +148,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-slate-900 dark:via-purple-900/20 dark:to-slate-900">
+    <div className="w-full h-full bg-background transition-colors duration-300 overflow-y-auto">
       {/* Header */}
       <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 Telugu Learning
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground text-sm mt-0.5">
                 Welcome back, {profile?.display_name || 'Learner'}!
               </p>
             </div>
@@ -171,43 +171,43 @@ export default function Home() {
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-4 mt-6">
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary p-2 rounded-lg">
-                  <Trophy className="w-5 h-5 text-primary-foreground" />
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <div className="bg-primary p-1.5 rounded-lg">
+                  <Trophy className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{profile?.total_stars || 0}</p>
-                  <p className="text-sm text-muted-foreground">Stars Earned</p>
+                  <p className="text-xl font-bold text-foreground">{profile?.total_stars || 0}</p>
+                  <p className="text-xs text-muted-foreground">Stars Earned</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <div className="bg-accent p-2 rounded-lg">
-                  <Target className="w-5 h-5 text-accent-foreground" />
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <div className="bg-accent p-1.5 rounded-lg">
+                  <Target className="w-4 h-4 text-accent-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-xl font-bold text-foreground">
                     {masteryData.filter(m => m.mastery_level === 'mastered').length}
                   </p>
-                  <p className="text-sm text-muted-foreground">Letters Mastered</p>
+                  <p className="text-xs text-muted-foreground">Letters Mastered</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-4 bg-secondary/50 border-border">
-              <div className="flex items-center gap-3">
-                <div className="bg-muted p-2 rounded-lg">
-                  <Clock className="w-5 h-5 text-muted-foreground" />
+            <Card className="p-3 bg-secondary/50 border-border">
+              <div className="flex items-center gap-2">
+                <div className="bg-muted p-1.5 rounded-lg">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-xl font-bold text-foreground">
                     {profile?.total_practice_time || 0}
                   </p>
-                  <p className="text-sm text-muted-foreground">Minutes Practiced</p>
+                  <p className="text-xs text-muted-foreground">Minutes Practiced</p>
                 </div>
               </div>
             </Card>
@@ -216,10 +216,10 @@ export default function Home() {
       </div>
 
       {/* Modules Grid */}
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <h2 className="text-2xl font-bold text-foreground mb-6">Learning Modules</h2>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">Learning Modules</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {MODULES.map((module, index) => {
             const Icon = module.icon;
             const progress = getModuleProgress(module.id);
@@ -237,49 +237,49 @@ export default function Home() {
                   className={!unlocked ? 'pointer-events-none' : ''}
                 >
                   <Card className={`
-                    p-6 h-full transition-all duration-300 cursor-pointer bg-card border-border
+                    p-4 h-full transition-all duration-300 cursor-pointer bg-card border-border
                     ${unlocked 
-                      ? 'hover:scale-105 hover:shadow-xl' 
+                      ? 'hover:scale-[1.02] hover:shadow-lg' 
                       : 'opacity-60'
                     }
                   `}>
                     <div className={`
                       bg-gradient-to-br ${module.color} 
-                      rounded-2xl p-6 mb-4 relative overflow-hidden
+                      rounded-xl p-4 mb-3 relative overflow-hidden
                     `}>
                       {!unlocked && (
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <Lock className="w-12 h-12 text-white" />
+                          <Lock className="w-8 h-8 text-white" />
                         </div>
                       )}
-                      <Icon className="w-12 h-12 text-white" />
+                      <Icon className="w-8 h-8 text-white" />
                     </div>
 
-                    <h3 className="text-xl font-bold text-card-foreground mb-2">
+                    <h3 className="text-lg font-bold text-card-foreground mb-1">
                       {module.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-xs text-muted-foreground mb-3">
                       {module.description}
                     </p>
 
                     {unlocked ? (
                       <>
-                        <div className="flex items-center justify-between text-sm mb-2">
+                        <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-muted-foreground">Progress</span>
                           <span className="font-semibold text-foreground">
                             {progress.completed}/{progress.total}
                           </span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-2">
+                        <div className="w-full bg-muted rounded-full h-1.5">
                           <div 
-                            className="bg-primary h-2 rounded-full transition-all"
+                            className="bg-primary h-1.5 rounded-full transition-all"
                             style={{ width: `${(progress.completed / progress.total) * 100}%` }}
                           />
                         </div>
                       </>
                     ) : (
-                      <div className="text-center py-2 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">
+                      <div className="text-center py-1.5 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">
                           Master more letters to unlock
                         </p>
                       </div>

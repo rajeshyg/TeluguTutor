@@ -139,11 +139,11 @@ export default function MicroPractice() {
 
   if (!user || strugglingGraphemes.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full h-full flex items-center justify-center bg-background">
         <div className="text-center">
-          <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">All Caught Up!</h2>
-          <p className="text-muted-foreground mb-6">No letters need extra practice right now</p>
+          <CheckCircle className="w-16 h-16 text-success mx-auto mb-3" />
+          <h2 className="text-xl font-bold text-foreground mb-2">All Caught Up!</h2>
+          <p className="text-muted-foreground text-sm mb-4">No letters need extra practice right now</p>
           <Link to={createPageUrl('Home')}>
             <Button>Return Home</Button>
           </Link>
@@ -153,11 +153,11 @@ export default function MicroPractice() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="w-full h-full bg-background overflow-y-auto">
       {/* Header */}
       <div className="bg-primary text-primary-foreground shadow-lg">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
             <Link to={createPageUrl('Home')}>
               <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/20 gap-2">
                 <ArrowLeft className="w-4 h-4" />
@@ -165,20 +165,20 @@ export default function MicroPractice() {
               </Button>
             </Link>
             
-            <div className="flex items-center gap-3">
-              <Zap className="w-6 h-6" />
-              <h1 className="text-2xl font-bold">Adaptive Practice</h1>
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5" />
+              <h1 className="text-xl font-bold">Adaptive Practice</h1>
             </div>
             
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              <span className="font-bold">{completedCount}/{strugglingGraphemes.length}</span>
+              <Target className="w-4 h-4" />
+              <span className="font-bold text-sm">{completedCount}/{strugglingGraphemes.length}</span>
             </div>
           </div>
           
-          <div className="w-full bg-primary-foreground/20 rounded-full h-3">
+          <div className="w-full bg-primary-foreground/20 rounded-full h-2">
             <motion.div 
-              className="bg-primary-foreground h-3 rounded-full"
+              className="bg-primary-foreground h-2 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentIndex + 1) / strugglingGraphemes.length) * 100}%` }}
             />
@@ -187,11 +187,11 @@ export default function MicroPractice() {
       </div>
 
       {/* Practice Area */}
-      <div className="max-w-4xl mx-auto py-8">
-        <div className="mb-6 text-center">
-          <div className="inline-block bg-card rounded-2xl px-6 py-3 shadow-lg">
-            <p className="text-sm text-muted-foreground mb-1">Focused Practice</p>
-            <p className="text-lg font-bold text-primary">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="mb-4 text-center">
+          <div className="inline-block bg-card rounded-xl px-4 py-2 shadow-md">
+            <p className="text-xs text-muted-foreground mb-0.5">Focused Practice</p>
+            <p className="text-base font-bold text-primary">
               Letter {currentIndex + 1} of {strugglingGraphemes.length}
             </p>
           </div>

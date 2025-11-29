@@ -80,9 +80,9 @@ export default function TransliterationChallenge({
                   className="absolute -top-3 -right-3"
                 >
                   {isCorrect ? (
-                    <CheckCircle2 className="w-8 h-8 text-green-500 fill-card" />
+                    <CheckCircle2 className="w-8 h-8 text-success fill-card" />
                   ) : (
-                    <XCircle className="w-8 h-8 text-red-500 fill-card" />
+                    <XCircle className="w-8 h-8 text-error fill-card" />
                   )}
                 </motion.div>
               )}
@@ -95,7 +95,7 @@ export default function TransliterationChallenge({
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className={`mt-8 text-2xl font-bold ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+          className={`mt-8 text-2xl font-bold ${isCorrect ? 'text-success' : 'text-error'}`}
         >
           {isCorrect ? '🎉 Correct!' : '❌ Try again!'}
         </motion.div>

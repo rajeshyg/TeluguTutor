@@ -83,9 +83,9 @@ export default function GraphemeMatch({
                   className="absolute -top-3 -right-3"
                 >
                   {isCorrect ? (
-                    <CheckCircle2 className="w-12 h-12 text-green-500 fill-card" />
+                    <CheckCircle2 className="w-12 h-12 text-success fill-card" />
                   ) : (
-                    <XCircle className="w-12 h-12 text-red-500 fill-card" />
+                    <XCircle className="w-12 h-12 text-error fill-card" />
                   )}
                 </motion.div>
               )}
@@ -97,7 +97,7 @@ export default function GraphemeMatch({
                 animate={{ scale: 1 }}
                 className="absolute -top-3 -right-3"
               >
-                <Sparkles className="w-10 h-10 text-yellow-500 fill-yellow-400" />
+                <Sparkles className="w-10 h-10 text-warning fill-warning" />
               </motion.div>
             )}
             
@@ -114,7 +114,7 @@ export default function GraphemeMatch({
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className={`mt-8 text-2xl font-bold ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+          className={`mt-8 text-2xl font-bold ${isCorrect ? 'text-success' : 'text-error'}`}
         >
           {isCorrect ? '🎉 Correct!' : '❌ Try again!'}
         </motion.div>

@@ -224,64 +224,97 @@ npm run test
 
 ---
 
-## 📊 RESEARCH TASKS (Create Sub-Specs)
+## 📊 RESEARCH TASKS
+
+### Status Summary (Nov 29, 2025)
+
+| ID | Research | Status | Owner | Due |
+|----|----------|--------|-------|-----|
+| R-001 | Telugu Language Accuracy | Not Started | TBD | TBD |
+| R-002 | Market Quality Research | **IN PROGRESS** | TBD | Dec 4 |
+| R-003 | Market Features Research | **IN PROGRESS** | TBD | Dec 4 |
 
 ### R-001: Telugu Language Accuracy Research
 **Location**: `docs/specs/research/telugu-accuracy.md`
-```markdown
-# Telugu Language Accuracy Research
+**Status**: Not Started
+**Owner**: TBD
 
-## Objective
-Verify accuracy of Telugu grapheme metadata in `src/data/teluguGraphemes.js`
+**Objective**: Verify accuracy of Telugu grapheme metadata in `src/data/teluguGraphemes.js`
 
-## Research Areas
-- [ ] Transliteration accuracy (ISO 15919 standard)
-- [ ] Pronunciation guides correctness
-- [ ] Component breakdown accuracy for compound characters
-- [ ] Confusable character pairs validation
-- [ ] Module categorization (Achchulu, Hallulu, etc.)
+**Key Areas**:
+- Transliteration accuracy (ISO 15919 standard)
+- Pronunciation guides correctness
+- Component breakdown accuracy for compound characters
+- Confusable character pairs validation
+- Module categorization (Achchulu, Hallulu, etc.)
 
-## Sources to Verify
-- Telugu Wikipedia
-- University linguistics resources
-- Native speaker validation
+---
 
-## Deliverable
-Updated `teluguGraphemes.js` with verified data
-```
+### R-002 & R-003: Market Research – Quality & Features (**IN PROGRESS**)
 
-### R-002: Market Research – Feature Quality & Ideas (**HIGH PRIORITY – NEXT**)
-**Location**: `docs/specs/research/market-quality.md`, `docs/specs/research/market-features.md`
-```markdown
-# Market Research – Quality & Features
+**Locations**: 
+- `docs/specs/research/market-quality.md` - Evaluation criteria & methodology
+- `docs/specs/research/market-features.md` - Feature inventory & backlog
 
-## Objective
-Benchmark TeluguTutor against top general language-learning apps (Duolingo, Memrise, Babbel, Busuu, Mondly, Drops). Do NOT focus on Telugu-specific apps.
+**Status**: In Progress | **Owner**: TBD | **Due**: Dec 4, 2025
 
-## Competitors to Analyze
-- [ ] Duolingo
-- [ ] Memrise
-- [ ] Babbel
-- [ ] Busuu
-- [ ] Mondly
-- [ ] Drops
+**Timeline**:
+- Initial findings: Dec 1, 2025
+- Full report: Dec 4, 2025
 
-## Quality Metrics
-- Learning progression design
-- Gamification effectiveness (streaks, badges, leaderboards, rewards)
-- UI/UX patterns (onboarding, navigation, microcopy, visuals)
-- Accessibility standards (WCAG 2.1 AA)
-- Assessment methods, retention hooks, content types
+#### Competitors Analyzed
+| App | Focus | Key Strength |
+|-----|-------|--------------|
+| Duolingo | Gamified courses | Streaks, XP system |
+| Memrise | Vocabulary & SRS | Spaced repetition |
+| Babbel | Conversational | Structured courses |
+| Busuu | Community-driven | Native speaker feedback |
+| Mondly | AR/VR integration | Interactive tech |
+| Drops | Visual vocab | 5-min sessions, design |
 
-## Feature Inventory
-- Lessons, exercises, audio, spaced repetition, social, notifications, offline support
+#### Key Gaps Identified in TeluguTutor
+- ❌ **Streaks** - Universal retention driver (all 6 competitors have it)
+- ❌ **Daily goals** - Habit formation trigger
+- ❌ **Spaced repetition** - Core to effective learning
+- ❌ **Onboarding flow** - Currently none, causes drop-off
+- ❌ **Achievements/badges** - Motivation loops
 
-## Deliverables
-- Quality improvement recommendations
-- Prioritized feature backlog (Must/Should/Nice-to-have)
-- Suggested KPIs (DAU, retention, lesson completion, accuracy)
-- Update `docs/guides/REFACTOR_NEXT_STEPS.md` with summary and owner
-```
+#### Prioritized Feature Backlog (Quick Reference)
+
+**Tier 1 - Must Have (Sprint 1-2, ~10-13 days)**:
+| Feature | Effort | Impact |
+|---------|--------|--------|
+| Streak system | 3-5 days | High retention |
+| Daily goal widget | 2-3 days | Habit formation |
+| Simple onboarding (3 screens) | 2-3 days | First-time UX |
+| Celebration animations | 1-2 days | Emotional reward |
+
+**Tier 2 - Should Have (Sprint 2-3)**:
+- Basic spaced repetition (5-7 days)
+- Achievement badges (3-5 days)
+- Accuracy tracking (2-3 days)
+- Weak items review (2-3 days)
+
+**Tier 3 - Nice to Have (Future)**:
+- Session length picker
+- Image-grapheme association
+- Listening exercises
+- Share progress / Leaderboards
+
+#### Suggested KPIs
+| Category | KPIs |
+|----------|------|
+| Engagement | DAU, Session length, Sessions/week, Streak length |
+| Learning | Lesson completion %, Module completion %, Accuracy rate |
+| Retention | Day 1/7/30 retention rates |
+
+#### Constraints Applied
+- All UI must use theme variables (no hardcoded colors)
+- Frontend-only (no push notifications, server-side features)
+- User auth not yet implemented (no leaderboards/friends)
+- Recommendations scoped for 2-3 week sprints
+
+**Full Details**: See `docs/specs/research/market-quality.md` and `docs/specs/research/market-features.md`
 
 ---
 

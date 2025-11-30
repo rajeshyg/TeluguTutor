@@ -158,9 +158,10 @@ export default function Learn() {
         const newConsecutive = success ? existing.consecutive_successes + 1 : 0;
         
         // Calculate confidence score (multi-factor)
-        const accuracyFactor = newAccuracy * 0.4;
-        const consistencyFactor = Math.min(newConsecutive * 5, 30);
-        const speedFactor = time < 3000 ? 20 : time < 5000 ? 10 : 0;
+        // Adjusted weights to prioritize accuracy over speed
+        const accuracyFactor = newAccuracy * 0.6; // Max 60 points
+        const consistencyFactor = Math.min(newConsecutive * 5, 20); // Max 20 points
+        const speedFactor = time < 3000 ? 10 : time < 5000 ? 5 : 0; // Max 10 points
         const retentionFactor = 10; // Would track days between practices
         
         const confidenceScore = Math.min(100, 

@@ -61,8 +61,8 @@ const MODULES = [
     description: 'Complete word puzzles',
     icon: Award,
     color: 'from-yellow-500 to-orange-500',
-    difficulty: 5,
-    requiresUnlock: true
+    difficulty: 5
+    // requiresUnlock removed to make it available
   }
 ];
 

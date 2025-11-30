@@ -130,4 +130,16 @@ export const TELUGU_GRAPHEMES = [
   { id: 'vt22', glyph: 'ర్ణ', transliteration: 'rṇa', type: 'vattu', module: 'vattulu', difficulty: 3, components: ['ర', '్', 'ణ'] },
   { id: 'vt23', glyph: 'న్య', transliteration: 'nya', type: 'vattu', module: 'vattulu', difficulty: 3, components: ['న', '్', 'య'] },
   { id: 'vt24', glyph: 'త్ర', transliteration: 'tra', type: 'vattu', module: 'vattulu', difficulty: 3, components: ['త', '్', 'ర'] },
+
+  // --- WORDS - Module: words ---
+  { id: 'w1', glyph: 'అమ్మ', transliteration: 'amma', type: 'word', module: 'words', difficulty: 1, components: ['అ', 'మ్మ'] },
+  { id: 'w2', glyph: 'నాన్న', transliteration: 'nānna', type: 'word', module: 'words', difficulty: 1, components: ['నా', 'న్న'] },
+  { id: 'w3', glyph: 'ఆవు', transliteration: 'āvu', type: 'word', module: 'words', difficulty: 1, components: ['ఆ', 'వు'] },
+  { id: 'w4', glyph: 'ఇల్లు', transliteration: 'illu', type: 'word', module: 'words', difficulty: 1, components: ['ఇ', 'ల్లు'] },
+  { id: 'w5', glyph: 'ఈగ', transliteration: 'īga', type: 'word', module: 'words', difficulty: 1, components: ['ఈ', 'గ'] },
+  { id: 'w6', glyph: 'ఉడుత', transliteration: 'uḍuta', type: 'word', module: 'words', difficulty: 2, components: ['ఉ', 'డు', 'త'] },
+  { id: 'w7', glyph: 'ఊయల', transliteration: 'ūyala', type: 'word', module: 'words', difficulty: 2, components: ['ఊ', 'య', 'ల'] },
+  { id: 'w8', glyph: 'ఎలుక', transliteration: 'eluka', type: 'word', module: 'words', difficulty: 2, components: ['ఎ', 'లు', 'క'] },
+  { id: 'w9', glyph: 'ఏనుగు', transliteration: 'ēnugu', type: 'word', module: 'words', difficulty: 2, components: ['ఏ', 'ను', 'గు'] },
+  { id: 'w10', glyph: 'ఒంటె', transliteration: 'oṇṭe', type: 'word', module: 'words', difficulty: 2, components: ['ఒ', 'ంటె'] },
 ];

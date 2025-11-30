@@ -46,56 +46,40 @@ app.get('/api/health', (req, res) => {
 });
 
 // Authentication middleware
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
-  const session = sessionOps.findByToken(token);
-  
-  if (!session) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-
-  req.user = {
-    id: session.user_id,
-    username: session.username,
-    email: session.email,
-    phone: session.phone,
-    name: session.name,
-    isGuest: session.is_guest === 1
-  };
-  req.token = token;
-  next();
-};
-
-// Optional authentication (doesn't fail if no token)
-const optionalAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    const session = sessionOps.findByToken(token);
-    if (session) {
-      req.user = {
-        id: session.user_id,
-        username: session.username,
-        email: session.email,
-        phone: session.phone,
-        name: session.name,
-        isGuest: session.is_guest === 1
-      };
-      req.token = token;
+  try {
+    const session = await sessionOps.findByToken(token);
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
+
+    req.user = {
+      id: session.user_id,
+      username: session.username,
+      email: session.email,
+      phone: session.phone,
+      name: session.name,
+      isGuest: session.is_guest === 1
+    };
+    req.token = token;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
   }
-  next();
 };
 
 // ============== AUTH ROUTES ==============
 
 // Register new user with username and password
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password, name, email, phone } = req.body;
 
@@ -139,16 +123,16 @@ app.post('/api/auth/register', (req, res) => {
     }
 
     // Check if username already exists
-    const existingUser = userOps.findByUsername(username);
+    const existingUser = await userOps.findByUsername(username);
     if (existingUser) {
       return res.status(400).json({ error: 'Username already taken' });
     }
 
     // Create user
-    const user = userOps.create(username, password, name.trim(), email || null, phone || null);
+    const user = await userOps.create(username, password, name.trim(), email || null, phone || null);
     
     // Create session
-    const session = sessionOps.create(user.id);
+    const session = await sessionOps.create(user.id);
 
     res.status(201).json({
       user: { 
@@ -167,7 +151,7 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 // Login with username and password
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -175,7 +159,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const user = userOps.findByUsername(username);
+    const user = await userOps.findByUsername(username);
     if (!user) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
@@ -186,7 +170,7 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     // Create session
-    const session = sessionOps.create(user.id);
+    const session = await sessionOps.create(user.id);
 
     res.json({
       user: { 
@@ -206,10 +190,10 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // Continue as guest (no password required)
-app.post('/api/auth/guest', (req, res) => {
+app.post('/api/auth/guest', async (req, res) => {
   try {
-    const user = userOps.createGuest();
-    const session = sessionOps.create(user.id);
+    const user = await userOps.createGuest();
+    const session = await sessionOps.create(user.id);
 
     res.json({
       user: { 
@@ -227,9 +211,9 @@ app.post('/api/auth/guest', (req, res) => {
 });
 
 // Get current user
-app.get('/api/auth/me', authenticate, (req, res) => {
+app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
-    const profile = profileOps.getByUserId(req.user.id);
+    const profile = await profileOps.getByUserId(req.user.id);
     res.json({
       ...req.user,
       profile: profile ? {
@@ -244,9 +228,9 @@ app.get('/api/auth/me', authenticate, (req, res) => {
 });
 
 // Get all users (for user selection - returns only usernames)
-app.get('/api/auth/users', (req, res) => {
+app.get('/api/auth/users', async (req, res) => {
   try {
-    const users = userOps.getAll();
+    const users = await userOps.getAll();
     res.json(users.map(u => ({ 
       id: u.id, 
       username: u.username,
@@ -259,9 +243,9 @@ app.get('/api/auth/users', (req, res) => {
 });
 
 // Logout
-app.post('/api/auth/logout', authenticate, (req, res) => {
+app.post('/api/auth/logout', authenticate, async (req, res) => {
   try {
-    sessionOps.delete(req.token);
+    await sessionOps.delete(req.token);
     res.json({ success: true });
   } catch (error) {
     console.error('Logout error:', error);
@@ -272,9 +256,9 @@ app.post('/api/auth/logout', authenticate, (req, res) => {
 // ============== PROFILE ROUTES ==============
 
 // Get user profile
-app.get('/api/profile', authenticate, (req, res) => {
+app.get('/api/profile', authenticate, async (req, res) => {
   try {
-    const profile = profileOps.getByUserId(req.user.id);
+    const profile = await profileOps.getByUserId(req.user.id);
     if (!profile) {
       return res.status(404).json({ error: 'Profile not found' });
     }
@@ -289,9 +273,9 @@ app.get('/api/profile', authenticate, (req, res) => {
 });
 
 // Update user profile
-app.patch('/api/profile', authenticate, (req, res) => {
+app.patch('/api/profile', authenticate, async (req, res) => {
   try {
-    const profile = profileOps.update(req.user.id, req.body);
+    const profile = await profileOps.update(req.user.id, req.body);
     if (!profile) {
       return res.status(404).json({ error: 'Profile not found' });
     }
@@ -308,9 +292,9 @@ app.patch('/api/profile', authenticate, (req, res) => {
 // ============== MASTERY ROUTES ==============
 
 // Get all mastery records for user
-app.get('/api/mastery', authenticate, (req, res) => {
+app.get('/api/mastery', authenticate, async (req, res) => {
   try {
-    const mastery = masteryOps.getByUserId(req.user.id);
+    const mastery = await masteryOps.getByUserId(req.user.id);
     res.json(mastery.map(m => ({
       ...m,
       needs_adaptive_practice: m.needs_adaptive_practice === 1,
@@ -323,9 +307,9 @@ app.get('/api/mastery', authenticate, (req, res) => {
 });
 
 // Get adaptive practice items
-app.get('/api/mastery/adaptive', authenticate, (req, res) => {
+app.get('/api/mastery/adaptive', authenticate, async (req, res) => {
   try {
-    const mastery = masteryOps.getAdaptivePractice(req.user.id);
+    const mastery = await masteryOps.getAdaptivePractice(req.user.id);
     res.json(mastery.map(m => ({
       ...m,
       needs_adaptive_practice: true,
@@ -338,7 +322,7 @@ app.get('/api/mastery/adaptive', authenticate, (req, res) => {
 });
 
 // Update or create mastery record
-app.post('/api/mastery', authenticate, (req, res) => {
+app.post('/api/mastery', authenticate, async (req, res) => {
   try {
     const { grapheme_id, ...data } = req.body;
     
@@ -353,7 +337,7 @@ app.post('/api/mastery', authenticate, (req, res) => {
       return res.status(400).json({ error: 'grapheme_id is required' });
     }
 
-    const mastery = masteryOps.createOrUpdate(req.user.id, grapheme_id, data);
+    const mastery = await masteryOps.createOrUpdate(req.user.id, grapheme_id, data);
     
     console.log('[API] POST /api/mastery - Result:', {
       id: mastery.id,
@@ -376,7 +360,7 @@ app.post('/api/mastery', authenticate, (req, res) => {
 // ============== PRACTICE SESSION ROUTES ==============
 
 // Create practice session
-app.post('/api/practice', authenticate, (req, res) => {
+app.post('/api/practice', authenticate, async (req, res) => {
   try {
     const { grapheme_id, is_correct, response_time, puzzle_type } = req.body;
     
@@ -384,7 +368,7 @@ app.post('/api/practice', authenticate, (req, res) => {
       return res.status(400).json({ error: 'grapheme_id is required' });
     }
 
-    const session = practiceOps.create(
+    const session = await practiceOps.create(
       req.user.id,
       grapheme_id,
       is_correct,
@@ -399,9 +383,9 @@ app.post('/api/practice', authenticate, (req, res) => {
 });
 
 // Get practice history
-app.get('/api/practice', authenticate, (req, res) => {
+app.get('/api/practice', authenticate, async (req, res) => {
   try {
-    const sessions = practiceOps.getByUserId(req.user.id);
+    const sessions = await practiceOps.getByUserId(req.user.id);
     res.json(sessions);
   } catch (error) {
     console.error('Get practice history error:', error);

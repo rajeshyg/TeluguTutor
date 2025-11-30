@@ -1,153 +1,19 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-// Create database in the data folder
-const dbPath = path.join(__dirname, '..', 'data', 'telugututor.db');
-const db = new Database(dbPath);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
-
-// Initialize database schema
-const migrations = [
-  {
-    version: 1,
-    name: 'initial_schema',
-    up: (db) => {
-      // Users table
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          username TEXT UNIQUE NOT NULL,
-          email TEXT,
-          phone TEXT,
-          name TEXT NOT NULL,
-          password_hash TEXT NOT NULL,
-          is_guest INTEGER DEFAULT 0,
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-      // Migration for existing databases that might miss the username column
-      try {
-        db.exec(`ALTER TABLE users ADD COLUMN username TEXT`);
-      } catch (e) {
-        // Column already exists, ignore
-      }
-
-      // Backfill username from email if missing
-      db.exec(`UPDATE users SET username = email WHERE username IS NULL`);
-
-      // User profiles table
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS user_profiles (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER UNIQUE NOT NULL,
-          display_name TEXT,
-          age INTEGER,
-          current_module TEXT DEFAULT 'hallulu',
-          total_stars INTEGER DEFAULT 0,
-          total_practice_time REAL DEFAULT 0,
-          badges_earned TEXT DEFAULT '[]',
-          unlocked_word_puzzles INTEGER DEFAULT 0,
-          last_active TEXT,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-      `);
-
-      // Grapheme mastery table
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS grapheme_mastery (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          grapheme_id TEXT NOT NULL,
-          confidence_score REAL DEFAULT 0,
-          accuracy_rate REAL DEFAULT 0,
-          total_attempts INTEGER DEFAULT 0,
-          successful_attempts INTEGER DEFAULT 0,
-          consecutive_successes INTEGER DEFAULT 0,
-          last_practiced TEXT,
-          mastery_level TEXT DEFAULT 'not_started',
-          average_response_time REAL,
-          needs_adaptive_practice INTEGER DEFAULT 0,
-          struggle_count INTEGER DEFAULT 0,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-          UNIQUE(user_id, grapheme_id)
-        )
-      `);
-
-      // Practice sessions table
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS practice_sessions (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          grapheme_id TEXT NOT NULL,
-          is_correct INTEGER NOT NULL,
-          response_time INTEGER,
-          puzzle_type TEXT,
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-      `);
-
-      // Sessions table
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS sessions (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          token TEXT UNIQUE NOT NULL,
-          expires_at TEXT NOT NULL,
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-      `);
-    }
-  }
-  // Add future migrations here, e.g.:
-  // {
-  //   version: 2,
-  //   name: 'add_preferences',
-  //   up: (db) => db.exec('ALTER TABLE users ADD COLUMN preferences TEXT')
-  // }
-];
-
-function initializeDatabase() {
-  const currentVersion = db.pragma('user_version', { simple: true });
-  console.log(`Current database version: ${currentVersion}`);
-
-  let versionUpdated = false;
-
-  for (const migration of migrations) {
-    if (migration.version > currentVersion) {
-      console.log(`Applying migration ${migration.version}: ${migration.name}...`);
-      
-      const runMigration = db.transaction(() => {
-        migration.up(db);
-        db.pragma(`user_version = ${migration.version}`);
-      });
-
-      try {
-        runMigration();
-        console.log(`Migration ${migration.version} applied successfully.`);
-        versionUpdated = true;
-      } catch (error) {
-        console.error(`Failed to apply migration ${migration.version}:`, error);
-        throw error; // Stop startup if migration fails
-      }
-    }
-  }
-
-  if (!versionUpdated) {
-    console.log('Database is up to date.');
-  }
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing SUPABASE_URL or SUPABASE_KEY environment variables');
+  // We don't exit here to allow the app to start and show the error, 
+  // but DB operations will fail.
 }
 
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
 
 // Simple password hashing (for production, use bcrypt)
 function hashPassword(password) {
@@ -159,76 +25,111 @@ function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// Helper to handle Supabase responses
+const handleResponse = async (promise) => {
+  const { data, error } = await promise;
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 // User operations
 const userOps = {
-  create: (username, password, name, email = null, phone = null) => {
+  create: async (username, password, name, email = null, phone = null) => {
     if (!username || !password || !name) {
       throw new Error('Username, password, and name are required');
     }
     
     // Check if username already exists
-    const existing = userOps.findByUsername(username);
+    const existing = await userOps.findByUsername(username);
     if (existing) {
       throw new Error('Username already taken');
     }
     
     const passwordHash = hashPassword(password);
-    const stmt = db.prepare(`
-      INSERT INTO users (username, email, phone, name, password_hash)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    const result = stmt.run(username, email, phone, name, passwordHash);
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert([{ username, email, phone, name, password_hash: passwordHash }])
+      .select()
+      .single();
+      
+    if (error) throw new Error(error.message);
     
     // Create associated profile
-    const profileStmt = db.prepare(`
-      INSERT INTO user_profiles (user_id, display_name)
-      VALUES (?, ?)
-    `);
-    profileStmt.run(result.lastInsertRowid, name);
+    await supabase
+      .from('user_profiles')
+      .insert([{ user_id: user.id, display_name: name }]);
     
-    return { id: result.lastInsertRowid, username, email, phone, name };
+    return user;
   },
 
-  createGuest: () => {
+  createGuest: async () => {
     const guestId = `guest_${Date.now()}`;
     const guestName = 'Guest Learner';
-    // Guests get a random password they won't use
     const guestPassword = crypto.randomBytes(16).toString('hex');
     
-    const stmt = db.prepare(`
-      INSERT INTO users (username, name, password_hash, is_guest)
-      VALUES (?, ?, ?, 1)
-    `);
-    const result = stmt.run(guestId, guestName, hashPassword(guestPassword));
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert([{ 
+        username: guestId, 
+        name: guestName, 
+        password_hash: hashPassword(guestPassword), 
+        is_guest: 1 
+      }])
+      .select()
+      .single();
+      
+    if (error) throw new Error(error.message);
     
     // Create associated profile
-    const profileStmt = db.prepare(`
-      INSERT INTO user_profiles (user_id, display_name)
-      VALUES (?, ?)
-    `);
-    profileStmt.run(result.lastInsertRowid, guestName);
+    await supabase
+      .from('user_profiles')
+      .insert([{ user_id: user.id, display_name: guestName }]);
     
-    return { id: result.lastInsertRowid, username: guestId, name: guestName, isGuest: true };
+    return { ...user, isGuest: true };
   },
 
-  findByUsername: (username) => {
-    const stmt = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE');
-    return stmt.get(username);
+  findByUsername: async (username) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('username', username) // Case insensitive
+      .maybeSingle();
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  findByEmail: (email) => {
-    const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-    return stmt.get(email);
+  findByEmail: async (email) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  findById: (id) => {
-    const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-    return stmt.get(id);
+  findById: async (id) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  getAll: () => {
-    const stmt = db.prepare('SELECT id, username, email, phone, name, is_guest, created_at FROM users WHERE is_guest = 0');
-    return stmt.all();
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, email, phone, name, is_guest, created_at')
+      .eq('is_guest', 0);
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
   verifyPassword: (user, password) => {
@@ -236,99 +137,177 @@ const userOps = {
     return user.password_hash === hashPassword(password);
   },
 
-  updatePassword: (userId, newPassword) => {
+  updatePassword: async (userId, newPassword) => {
     const passwordHash = hashPassword(newPassword);
-    const stmt = db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
-    return stmt.run(passwordHash, userId);
+    const { error } = await supabase
+      .from('users')
+      .update({ password_hash: passwordHash, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+      
+    if (error) throw new Error(error.message);
+    return true;
   }
 };
 
 // Session operations
 const sessionOps = {
-  create: (userId) => {
+  create: async (userId) => {
     const token = generateToken();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
     
-    const stmt = db.prepare(`
-      INSERT INTO sessions (user_id, token, expires_at)
-      VALUES (?, ?, ?)
-    `);
-    stmt.run(userId, token, expiresAt);
-    
+    const { error } = await supabase
+      .from('sessions')
+      .insert([{ user_id: userId, token, expires_at: expiresAt }]);
+      
+    if (error) throw new Error(error.message);
     return { token, expiresAt };
   },
 
-  findByToken: (token) => {
-    const stmt = db.prepare(`
-      SELECT s.*, u.username, u.email, u.phone, u.name, u.is_guest
-      FROM sessions s
-      JOIN users u ON s.user_id = u.id
-      WHERE s.token = ? AND s.expires_at > datetime('now')
-    `);
-    return stmt.get(token);
+  findByToken: async (token) => {
+    // Join with users table
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        users (
+          username,
+          email,
+          phone,
+          name,
+          is_guest
+        )
+      `)
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+      
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+
+    // Flatten structure to match previous SQLite return format
+    return {
+      ...data,
+      username: data.users.username,
+      email: data.users.email,
+      phone: data.users.phone,
+      name: data.users.name,
+      is_guest: data.users.is_guest
+    };
   },
 
-  delete: (token) => {
-    const stmt = db.prepare('DELETE FROM sessions WHERE token = ?');
-    return stmt.run(token);
+  delete: async (token) => {
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('token', token);
+      
+    if (error) throw new Error(error.message);
+    return true;
   },
 
-  deleteAllForUser: (userId) => {
-    const stmt = db.prepare('DELETE FROM sessions WHERE user_id = ?');
-    return stmt.run(userId);
+  deleteAllForUser: async (userId) => {
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('user_id', userId);
+      
+    if (error) throw new Error(error.message);
+    return true;
   }
 };
 
 // Profile operations
 const profileOps = {
-  getByUserId: (userId) => {
-    const stmt = db.prepare('SELECT * FROM user_profiles WHERE user_id = ?');
-    return stmt.get(userId);
+  getByUserId: async (userId) => {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  update: (userId, updates) => {
+  update: async (userId, updates) => {
     const allowedFields = ['display_name', 'age', 'current_module', 'total_stars', 
                           'total_practice_time', 'badges_earned', 'unlocked_word_puzzles', 'last_active'];
-    const fields = Object.keys(updates).filter(k => allowedFields.includes(k));
+    const fields = {};
     
-    if (fields.length === 0) return null;
-    
-    const setClause = fields.map(f => `${f} = ?`).join(', ');
-    const values = fields.map(f => {
-      if (f === 'badges_earned' && Array.isArray(updates[f])) {
-        return JSON.stringify(updates[f]);
+    Object.keys(updates).forEach(k => {
+      if (allowedFields.includes(k)) {
+        if (k === 'badges_earned' && Array.isArray(updates[k])) {
+          fields[k] = JSON.stringify(updates[k]);
+        } else {
+          fields[k] = updates[k];
+        }
       }
-      return updates[f];
     });
     
-    const stmt = db.prepare(`UPDATE user_profiles SET ${setClause} WHERE user_id = ?`);
-    stmt.run(...values, userId);
+    if (Object.keys(fields).length === 0) return null;
     
-    return profileOps.getByUserId(userId);
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(fields)
+      .eq('user_id', userId)
+      .select()
+      .single();
+      
+    if (error) throw new Error(error.message);
+    return data;
+  },
+  
+  // Helper to create profile if missing (for migration)
+  create: async (userId, name) => {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert([{ user_id: userId, display_name: name }])
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
   }
 };
 
 // Grapheme mastery operations
 const masteryOps = {
-  getByUserId: (userId) => {
-    const stmt = db.prepare('SELECT * FROM grapheme_mastery WHERE user_id = ?');
-    return stmt.all(userId);
+  getByUserId: async (userId) => {
+    const { data, error } = await supabase
+      .from('grapheme_mastery')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  getByUserIdAndGrapheme: (userId, graphemeId) => {
-    const stmt = db.prepare('SELECT * FROM grapheme_mastery WHERE user_id = ? AND grapheme_id = ?');
-    return stmt.get(userId, graphemeId);
+  getByUserIdAndGrapheme: async (userId, graphemeId) => {
+    const { data, error } = await supabase
+      .from('grapheme_mastery')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('grapheme_id', graphemeId)
+      .maybeSingle();
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  getAdaptivePractice: (userId) => {
-    const stmt = db.prepare('SELECT * FROM grapheme_mastery WHERE user_id = ? AND needs_adaptive_practice = 1');
-    return stmt.all(userId);
+  getAdaptivePractice: async (userId) => {
+    const { data, error } = await supabase
+      .from('grapheme_mastery')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('needs_adaptive_practice', 1);
+      
+    if (error) throw new Error(error.message);
+    return data;
   },
 
-  createOrUpdate: (userId, graphemeId, data) => {
-    const existing = masteryOps.getByUserIdAndGrapheme(userId, graphemeId);
+  createOrUpdate: async (userId, graphemeId, data) => {
+    const existing = await masteryOps.getByUserIdAndGrapheme(userId, graphemeId);
     
-    // Helper to sanitize values for SQLite
+    // Helper to sanitize values
     const sanitizeValue = (key, value) => {
       if (value === undefined || value === null) return null;
       if (key === 'needs_adaptive_practice') return value ? 1 : 0;
@@ -337,96 +316,93 @@ const masteryOps = {
       return value;
     };
     
-    console.log('[DB] createOrUpdate:', { 
-      userId, 
-      graphemeId, 
-      existingId: existing?.id,
-      existingAttempts: existing?.total_attempts,
-      existingLevel: existing?.mastery_level,
-      incomingAttempts: data.total_attempts,
-      incomingLevel: data.mastery_level
-    });
+    const fields = ['confidence_score', 'accuracy_rate', 'total_attempts', 'successful_attempts',
+                   'consecutive_successes', 'last_practiced', 'mastery_level', 'average_response_time',
+                   'needs_adaptive_practice', 'struggle_count'];
+                   
+    const payload = { user_id: userId, grapheme_id: graphemeId };
     
     if (existing) {
-      const fields = ['confidence_score', 'accuracy_rate', 'total_attempts', 'successful_attempts',
-                     'consecutive_successes', 'last_practiced', 'mastery_level', 'average_response_time',
-                     'needs_adaptive_practice', 'struggle_count'];
-      const updates = fields.filter(f => data[f] !== undefined);
+      // Update
+      fields.forEach(f => {
+        if (data[f] !== undefined) payload[f] = sanitizeValue(f, data[f]);
+      });
       
-      if (updates.length === 0) return existing;
-      
-      const setClause = updates.map(f => `${f} = ?`).join(', ');
-      const values = updates.map(f => sanitizeValue(f, data[f]));
-      
-      console.log('[DB] Updating mastery:', { userId, graphemeId, updates, values });
-      
-      const stmt = db.prepare(`UPDATE grapheme_mastery SET ${setClause} WHERE id = ?`);
-      stmt.run(...values, existing.id);
-      
-      return masteryOps.getByUserIdAndGrapheme(userId, graphemeId);
+      const { data: updated, error } = await supabase
+        .from('grapheme_mastery')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+        
+      if (error) throw new Error(error.message);
+      return updated;
     } else {
-      const stmt = db.prepare(`
-        INSERT INTO grapheme_mastery (user_id, grapheme_id, confidence_score, accuracy_rate, 
-          total_attempts, successful_attempts, consecutive_successes, last_practiced, 
-          mastery_level, average_response_time, needs_adaptive_practice, struggle_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      const result = stmt.run(
-        userId, graphemeId,
-        sanitizeValue('confidence_score', data.confidence_score) || 0,
-        sanitizeValue('accuracy_rate', data.accuracy_rate) || 0,
-        sanitizeValue('total_attempts', data.total_attempts) || 0,
-        sanitizeValue('successful_attempts', data.successful_attempts) || 0,
-        sanitizeValue('consecutive_successes', data.consecutive_successes) || 0,
-        data.last_practiced || new Date().toISOString(),
-        data.mastery_level || 'not_started',
-        sanitizeValue('average_response_time', data.average_response_time),
-        sanitizeValue('needs_adaptive_practice', data.needs_adaptive_practice),
-        sanitizeValue('struggle_count', data.struggle_count) || 0
-      );
+      // Insert
+      fields.forEach(f => {
+        payload[f] = sanitizeValue(f, data[f]);
+      });
+      // Set defaults for missing fields if needed, though DB handles defaults
+      if (payload.confidence_score === undefined) payload.confidence_score = 0;
+      if (payload.mastery_level === undefined) payload.mastery_level = 'not_started';
       
-      console.log('[DB] Created new mastery:', { userId, graphemeId, id: result.lastInsertRowid });
-      
-      return { id: result.lastInsertRowid, user_id: userId, grapheme_id: graphemeId, ...data };
+      const { data: created, error } = await supabase
+        .from('grapheme_mastery')
+        .insert([payload])
+        .select()
+        .single();
+        
+      if (error) throw new Error(error.message);
+      return created;
     }
   }
 };
 
 // Practice session operations
 const practiceOps = {
-  create: (userId, graphemeId, isCorrect, responseTime, puzzleType) => {
-    const stmt = db.prepare(`
-      INSERT INTO practice_sessions (user_id, grapheme_id, is_correct, response_time, puzzle_type)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    const result = stmt.run(userId, graphemeId, isCorrect ? 1 : 0, responseTime, puzzleType);
+  create: async (userId, graphemeId, isCorrect, responseTime, puzzleType) => {
+    const { data: session, error } = await supabase
+      .from('practice_sessions')
+      .insert([{
+        user_id: userId,
+        grapheme_id: graphemeId,
+        is_correct: isCorrect ? 1 : 0,
+        response_time: responseTime,
+        puzzle_type: puzzleType
+      }])
+      .select()
+      .single();
+      
+    if (error) throw new Error(error.message);
     
     // Update practice time in profile
     if (responseTime) {
-      const profile = profileOps.getByUserId(userId);
+      const profile = await profileOps.getByUserId(userId);
       if (profile) {
         const additionalTime = responseTime / 60000; // Convert ms to minutes
-        profileOps.update(userId, {
+        await profileOps.update(userId, {
           total_practice_time: (profile.total_practice_time || 0) + Math.max(additionalTime, 0.1),
           last_active: new Date().toISOString()
         });
       }
     }
     
-    return { id: result.lastInsertRowid, userId, graphemeId, isCorrect, responseTime, puzzleType };
+    return session;
   },
 
-  getByUserId: (userId) => {
-    const stmt = db.prepare('SELECT * FROM practice_sessions WHERE user_id = ? ORDER BY created_at DESC');
-    return stmt.all(userId);
+  getByUserId: async (userId) => {
+    const { data, error } = await supabase
+      .from('practice_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+      
+    if (error) throw new Error(error.message);
+    return data;
   }
 };
 
-// Initialize database on module load
-initializeDatabase();
-
 export {
-  db,
   userOps,
   sessionOps,
   profileOps,

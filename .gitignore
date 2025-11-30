@@ -39,3 +39,5 @@ data/*.db-journal
 .vscode/
 .idea/
 *.swp
+.vercel
+.env*.local

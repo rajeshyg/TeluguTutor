@@ -551,7 +551,7 @@ export default function Login() {
             animate={{ rotate: [0, -5, 5, 0] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
           >
-            <span className="text-4xl text-primary-foreground font-bold">?</span>
+            <span className="text-4xl text-primary-foreground font-bold">అ</span>
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground">Telugu Tutor</h1>
           <p className="text-muted-foreground mt-2">Learn Telugu one letter at a time </p>

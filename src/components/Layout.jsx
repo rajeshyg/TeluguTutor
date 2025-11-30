@@ -30,6 +30,10 @@ export default function Layout() {
         <header className="w-full bg-card border-b border-border">
           <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              {/* Telugu Tutor Logo */}
+              <span className="inline-flex items-center justify-center w-10 h-10 bg-primary rounded-xl shadow-lg">
+                <span className="text-xl text-primary-foreground font-bold">అ</span>
+              </span>
               <h1 className="text-lg font-semibold text-foreground">Telugu Tutor</h1>
             </div>
             <div className="flex items-center gap-2">

@@ -1,17 +1,13 @@
 ---
 id: R-003
-title: Market Features Research
-status: in-progress
-priority: medium
-created: 2025-11-29
-owner: TBD
-timeline:
-  initial_findings: 2025-12-01
-  full_report: 2025-12-04
-depends_on: R-002
+title: Market Features & ROI Analysis
+status: active
+priority: high
+last_updated: 2025-11-30
+last_verified: 2025-11-30
 ---
 
-# Market Features Research
+# Market Features & ROI Analysis
 
 ## Description
 
@@ -23,6 +19,28 @@ Feature inventory and prioritization based on competitive analysis of leading la
 2. Identify gaps in TeluguTutor's current offering
 3. Prioritize features for 2–3 week sprint cycles
 4. Define KPIs to measure feature success
+
+---
+
+## Current Implementation Summary
+
+*Verified against codebase on 2025-11-30*
+
+### ✅ Already Implemented
+- **Stars/Points System** - Tracked in `user_profiles.total_stars`
+- **Module/Skill Tree** - 6 modules: Achchulu, Hallulu, Gunintalu, Hachchulu, Vattulu, Words
+- **Puzzle Types** - GraphemeMatch, TransliterationChallenge, DecomposeRebuild
+- **Adaptive Practice** - `needs_adaptive_practice` flag + `MicroPractice.jsx` for struggling graphemes
+- **Confidence Tracking** - Per-grapheme scores (0-100) with mastery levels
+- **Celebration Animations** - Full confetti, stars, emoji bursts in `Celebration.jsx`
+- **Sound Effects** - Success/error sounds via Web Audio API (`sounds.js`)
+- **Progress Stats** - Mastered count, accuracy %, practice time, per-grapheme details
+- **Dark Mode** - Theme toggle with `ThemeContext`
+- **Authentication** - Supabase-based user accounts
+
+### ⚡ Partial/Ready for Enhancement
+- **Badges** - DB schema exists (`badges_earned` JSON array), no UI or awarding logic
+- **Review Mode** - Adaptive practice targets struggles, but no SRS scheduling
 
 ---
 
@@ -62,14 +80,14 @@ Feature inventory and prioritization based on competitive analysis of leading la
 
 | Feature | Duolingo | Memrise | Babbel | Busuu | Mondly | Drops | **TeluguTutor** |
 |---------|----------|---------|--------|-------|--------|-------|-----------------|
-| Streaks | ✅ | ✅ | ⚡ | ✅ | ✅ | ✅ | ❌ |
+| Streaks | ✅ | ✅ | ⚡ | ✅ | ✅ | ✅ | ❌ (No daily streaks) |
 | XP/Points | ✅ | ✅ | ❌ | ⚡ | ✅ | ❌ | ✅ (Stars) |
 | Daily goals | ✅ | ✅ | ⚡ | ✅ | ✅ | ✅ | ❌ |
-| Achievements/badges | ✅ | ✅ | ⚡ | ✅ | ✅ | ⚡ | ❌ |
+| Achievements/badges | ✅ | ✅ | ⚡ | ✅ | ✅ | ⚡ | ⚡ (Data model) |
 | Leaderboards | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | Hearts/lives | ✅ | ❌ | ❌ | ❌ | ⚡ | ❌ | ❌ |
 | Streak freeze | ✅ | ⚡ | ❌ | ✅ | ⚡ | ✅ | N/A |
-| Level-up celebrations | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚡ |
+| Level-up celebrations | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (Confetti, stars) |
 
 ### Progress & Stats
 
@@ -79,8 +97,8 @@ Feature inventory and prioritization based on competitive analysis of leading la
 | Per-module progress | ✅ | ✅ | ✅ | ✅ | ✅ | ⚡ | ✅ |
 | Words learned count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Time practiced | ✅ | ✅ | ⚡ | ✅ | ✅ | ✅ | ✅ |
-| Accuracy stats | ✅ | ✅ | ⚡ | ⚡ | ⚡ | ⚡ | ❌ |
-| Weak words review | ✅ | ✅ | ⚡ | ⚡ | ⚡ | ⚡ | ❌ |
+| Accuracy stats | ✅ | ✅ | ⚡ | ⚡ | ⚡ | ⚡ | ⚡ (Per-grapheme) |
+| Weak words review | ✅ | ✅ | ⚡ | ⚡ | ⚡ | ⚡ | ✅ (Adaptive Practice) |
 | Learning history | ✅ | ✅ | ✅ | ✅ | ⚡ | ⚡ | ❌ |
 
 ### Social Features
@@ -98,7 +116,7 @@ Feature inventory and prioritization based on competitive analysis of leading la
 |---------|----------|---------|--------|-------|--------|-------|-----------------|
 | Onboarding flow | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Dark mode | ✅ | ✅ | ⚡ | ⚡ | ✅ | ✅ | ✅ |
-| Offline mode | ✅🔒 | ✅🔒 | ✅ | ✅🔒 | ✅🔒 | ✅🔒 | ✅ (local) |
+| Offline mode | ✅🔒 | ✅🔒 | ✅ | ✅🔒 | ✅🔒 | ✅🔒 | ❌ (Online-first) |
 | Customizable goals | ✅ | ✅ | ⚡ | ✅ | ✅ | ✅ | ❌ |
 | Notifications | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Session length control | ⚡ | ⚡ | ⚡ | ⚡ | ⚡ | ✅ | ❌ |
@@ -111,56 +129,55 @@ Feature inventory and prioritization based on competitive analysis of leading la
 
 | Gap | Impact | Effort | Priority |
 |-----|--------|--------|----------|
-| **Streaks** | High retention | Low | Must |
+| **Daily Usage Streaks** | High retention | Low | Must |
 | **Daily goals** | Habit formation | Low | Must |
 | **Spaced repetition** | Learning effectiveness | Medium | Must |
 | **Onboarding flow** | First-time UX | Low | Must |
-| **Achievements** | Motivation | Medium | Should |
+| **Listening exercises** | Language immersion | High | Should |
 
 ### Partial Gaps (Needs Improvement)
 
 | Gap | Current State | Improvement Needed |
 |-----|---------------|-------------------|
-| Structured lessons | Puzzle-based only | Add lesson scaffolding |
-| Adaptive difficulty | Basic confidence tracking | Implement proper SRS algorithm |
-| Level-up celebrations | Minimal feedback | Add animations, confetti |
-| Typing exercises | Transliteration only | Add full grapheme typing |
+| **Achievements/Badges** | Data model exists (`badges_earned` in DB) | Build UI to display and award badges |
+| Structured lessons | Puzzle-based only | Add lesson scaffolding with explanations |
+| Adaptive difficulty | Struggle-based targeting | Implement proper SRS algorithm with review scheduling |
+| Sound effects | UI feedback sounds only | Add Telugu pronunciation audio files |
+| Typing exercises | Multiple choice only | Add keyboard input for grapheme typing |
 
 ---
 
-## Prioritized Feature Backlog
+## ROI-Based Feature Roadmap
 
-### Tier 1: Must Have (Sprint 1-2)
+Features are prioritized by **ROI Score** = (Impact × Urgency) / Effort.
 
-| Feature | Description | Effort | Justification |
-|---------|-------------|--------|---------------|
-| **Streak system** | Track consecutive days practiced | 3-5 days | Universal retention driver; all 6 competitors have it |
-| **Daily goal widget** | "Practice X minutes today" with progress | 2-3 days | Low effort, high engagement impact |
-| **Simple onboarding** | 3-screen intro: welcome, goal, first lesson | 2-3 days | Reduces drop-off, sets expectations |
-| **Celebration animations** | Confetti/feedback on module completion | 1-2 days | Emotional reward, all competitors excel here |
+### 🚨 Tier 1: High ROI (Immediate Wins)
+*Low Effort, High Impact. Focus on Retention.*
 
-**Sprint 1 Total**: ~10-13 days
+| Rank | Feature | ROI Score | Effort | Impact | Description |
+|------|---------|-----------|--------|--------|-------------|
+| 1 | **Daily Streak System** | **9.5** | Low (2d) | Critical | Track consecutive days practiced. **#1 Retention Driver.** Needs DB schema update for `current_streak`, `longest_streak`, `last_practice_date` in `user_profiles`. |
+| 2 | **Onboarding Flow** | **9.0** | Low (3d) | Critical | 3-screen welcome: Goal setting -> First win. Reduces bounce rate. |
+| 3 | **Daily Goal Widget**| **8.5** | Low (2d) | High | Visual progress bar for daily practice (e.g., "10 mins/day"). |
+| 4 | **Session Summary** | **8.0** | Low (2d) | High | "End of session" screen with stats (Stars earned, Accuracy). |
 
-### Tier 2: Should Have (Sprint 2-3)
+### 🛠️ Tier 2: Strategic Value (Next Sprint)
+*Medium Effort, High Impact. Focus on Learning Quality.*
 
-| Feature | Description | Effort | Justification |
-|---------|-------------|--------|---------------|
-| **Spaced repetition (basic)** | Review weak graphemes periodically | 5-7 days | Core to effective learning; Memrise's key differentiator |
-| **Achievement badges** | 10-15 unlockable badges | 3-5 days | Motivation loops; Duolingo has 100+ but we start small |
-| **Accuracy tracking** | Per-grapheme accuracy percentage | 2-3 days | Informs SRS; shows mastery depth |
-| **Weak items review** | "Practice mistakes" button | 2-3 days | Addresses learning gaps directly |
+| Rank | Feature | ROI Score | Effort | Impact | Description |
+|------|---------|-----------|--------|--------|-------------|
+| 5 | **Spaced Repetition**| **7.5** | Med (5d) | High | Implement SM-2 or Leitner system. Currently have struggle-based adaptive practice - needs review scheduling based on `last_practiced` timestamps. |
+| 6 | **Achievement UI** | **6.5** | Med (3d) | Med | Visual UI for `badges_earned` (DB field exists, no UI yet). Define badge criteria and display. |
+| 7 | **Learning History** | **6.0** | Med (3d) | Med | Timeline view of practice sessions from `practice_sessions` table. |
 
-**Sprint 2-3 Total**: ~12-18 days
+### 🔮 Tier 3: Long-Term Bets
+*High Effort or Lower Immediate Impact.*
 
-### Tier 3: Nice to Have (Future)
-
-| Feature | Description | Effort | Justification |
-|---------|-------------|--------|---------------|
-| Session length picker | "5 min / 10 min / 15 min" toggle | 1-2 days | Drops' core feature; good for busy users |
-| Image-grapheme association | Visual mnemonics per character | 5-7 days | Requires asset creation; high retention value |
-| Listening exercises | Audio pronunciation matching | 7-10 days | Requires audio files; important for language learning |
-| Share progress | "Share to Twitter/WhatsApp" button | 1-2 days | Social proof; depends on user base |
-| Friend leaderboard | Compare with connected friends | 5-7 days | Requires user auth first |
+| Rank | Feature | ROI Score | Effort | Impact | Description |
+|------|---------|-----------|--------|--------|-------------|
+| 8 | **Audio Support** | **6.0** | High | High | Native pronunciation audio. High asset cost. |
+| 9 | **Leaderboards** | **5.5** | Med | Med | Weekly friend/global rankings. Needs critical mass of users. |
+| 10 | **Social Sharing** | **4.0** | Low | Low | "Share my streak" images. |
 
 ---
 
@@ -173,8 +190,9 @@ Per project documentation:
 | Constraint | Source | Impact on Features |
 |------------|--------|-------------------|
 | Frontend-only | `always-on.md` | No push notifications, server-side SRS |
-| No backend | `always-on.md` | All data in localStorage; no sync |
-| No user auth (yet) | `REFACTOR_NEXT_STEPS.md` | No leaderboards, friend features until auth added |
+| **Backend** | ✅ **Unlocked** | We CAN do server-side validation, leaderboards, and cross-device sync. |
+| **Auth** | ✅ **Unlocked** | We CAN track individual user progress and streaks securely. |
+| **Database** | ✅ **Unlocked** | We use PostgreSQL. Complex queries (e.g., "Top 10 users") are now easy. |
 | Theme variables only | `theme-system.md` | All UI must use `bg-*`, `text-*` semantic classes |
 
 ### Design Constraints
@@ -193,9 +211,9 @@ Per project documentation:
 
 | KPI | Definition | Target | Measurement |
 |-----|------------|--------|-------------|
-| **DAU** | Daily Active Users | Track baseline first | localStorage visit tracking |
+| **DAU** | Daily Active Users | Track baseline first | DB login tracking |
 | **Session length** | Average time per session | 5-10 minutes | Track session start/end |
-| **Sessions per user per week** | Weekly engagement depth | 3+ sessions | localStorage analytics |
+| **Sessions per user per week** | Weekly engagement depth | 3+ sessions | DB analytics |
 | **Streak length** | Average consecutive days | 3+ days | After streak feature ships |
 
 ### Learning Metrics
@@ -214,20 +232,6 @@ Per project documentation:
 | **Day 1 retention** | % returning next day | 40%+ | Visit timestamp tracking |
 | **Day 7 retention** | % returning after 1 week | 20%+ | Visit timestamp tracking |
 | **Day 30 retention** | % returning after 1 month | 10%+ | Visit timestamp tracking |
-
-### Implementation Note
-
-All metrics can be tracked client-side with localStorage. Structure:
-
-```javascript
-// src/data/analytics.js (proposed)
-const analytics = {
-  sessions: [{ start: timestamp, end: timestamp, lessons: [] }],
-  streaks: { current: 0, longest: 0, lastPractice: date },
-  accuracy: { grapheme_id: { correct: 0, attempts: 0 } },
-  retention: { firstVisit: date, visits: [dates] }
-};
-```
 
 ---
 
@@ -248,7 +252,7 @@ Track consecutive days of practice to encourage daily engagement.
 - Display current streak count on Home page
 - Increment streak if practiced today (any completed exercise)
 - Reset streak if day missed (no practice yesterday)
-- Persist streak data in localStorage
+- Persist streak data in Database
 
 ### Non-Functional
 - Streak calculation runs on app load

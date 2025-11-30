@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, RotateCcw, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,17 @@ export default function DecomposeRebuild({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const hasAnsweredRef = useRef(false); // Prevent double-answer
+  const displayTimeoutRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (displayTimeoutRef.current) {
+        clearTimeout(displayTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Shuffle components
@@ -28,6 +39,7 @@ export default function DecomposeRebuild({
     setShowResult(false);
     setShowHint(false);
     setShowCelebration(false);
+    hasAnsweredRef.current = false;
   }, [targetGrapheme]);
 
   const handleDrop = (tileId) => {
@@ -44,6 +56,10 @@ export default function DecomposeRebuild({
   };
 
   const handleCheck = () => {
+    // Prevent checking twice
+    if (hasAnsweredRef.current || showResult) return;
+    hasAnsweredRef.current = true;
+    
     const responseTime = Date.now() - startTime;
     const userAnswer = placedTiles.map(t => t.text).join('');
     const correct = userAnswer === targetGrapheme.components.join('');
@@ -61,7 +77,8 @@ export default function DecomposeRebuild({
       soundManager.playError();
     }
     
-    setTimeout(() => {
+    // Show result for a moment, then notify parent
+    displayTimeoutRef.current = setTimeout(() => {
       setShowCelebration(false);
       onAnswer(correct);
     }, 2000);

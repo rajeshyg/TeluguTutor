@@ -128,17 +128,28 @@ export default function Home() {
     // Filter mastery data to only include graphemes from this specific module
     const moduleMastery = masteryData.filter(m => {
       const graphemeModule = graphemeModuleMap.get(m.grapheme_id);
-      return graphemeModule === moduleId && m.confidence_score > 0;
+      return graphemeModule === moduleId;
     });
     
     const totalInModule = moduleGraphemeCounts[moduleId] || 10;
     
+    // Count graphemes that have been practiced (any attempts)
+    const practiced = moduleMastery.filter(m => m.total_attempts > 0).length;
+    
+    // Calculate average confidence of practiced items
+    const avgConfidence = practiced > 0 
+      ? moduleMastery.reduce((sum, m) => sum + (m.confidence_score || 0), 0) / practiced 
+      : 0;
+    
+    // Progress percentage based on practiced items
+    const progressPercent = Math.round((practiced / totalInModule) * 100);
+    
     return {
       completed: moduleMastery.filter(m => m.confidence_score >= 80).length,
+      practiced,
       total: totalInModule,
-      avgConfidence: moduleMastery.length > 0 
-        ? moduleMastery.reduce((sum, m) => sum + m.confidence_score, 0) / moduleMastery.length 
-        : 0
+      avgConfidence,
+      progressPercent
     };
   };
 
@@ -270,7 +281,7 @@ export default function Home() {
                         </div>
                         {unlocked && (
                           <div className="text-[10px] font-bold text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">
-                            {Math.round((progress.completed / progress.total) * 100)}%
+                            {progress.progressPercent}%
                           </div>
                         )}
                       </div>
@@ -289,7 +300,7 @@ export default function Home() {
                           <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
                             <div 
                               className={`h-full bg-gradient-to-r ${module.color}`} 
-                              style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+                              style={{ width: `${progress.progressPercent}%` }}
                             />
                           </div>
                         ) : (

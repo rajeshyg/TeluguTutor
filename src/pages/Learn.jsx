@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,11 +37,19 @@ export default function Learn() {
   const [responseTime, setResponseTime] = useState(0);
   const [orderedGraphemes, setOrderedGraphemes] = useState([]);
   const [showModuleComplete, setShowModuleComplete] = useState(false);
+  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false); // Prevent double-processing
+  
+  // Refs for stable state tracking
+  const moduleInitializedRef = useRef(null); // Track which module has been initialized
+  const answerTimeoutRef = useRef(null); // Timeout for advancing to next question
+  const puzzleKeyRef = useRef(0); // Force puzzle re-mount on question change
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const module = urlParams.get('module');
-    if (module) setCurrentModule(module);
+    if (module) {
+      setCurrentModule(module);
+    }
   }, []);
 
   const { data: graphemes = [], isLoading } = useQuery({
@@ -63,40 +71,63 @@ export default function Learn() {
   });
 
   // Smart ordering: prioritize unanswered and failed questions, then randomize
+  // Only runs once per module, tracked by moduleInitializedRef
   useEffect(() => {
-    if (graphemes.length > 0 && masteryData !== undefined) {
-      // Create a map of grapheme mastery for quick lookup
-      const masteryMap = new Map();
-      masteryData.forEach(m => masteryMap.set(m.grapheme_id, m));
-      
-      // Categorize graphemes
-      const unanswered = []; // Never attempted
-      const failed = [];     // Attempted but low accuracy/struggling
-      const practiced = [];  // Already practiced with decent accuracy
-      
-      graphemes.forEach(g => {
-        const mastery = masteryMap.get(g.id);
-        if (!mastery || mastery.total_attempts === 0) {
-          unanswered.push(g);
-        } else if (mastery.accuracy_rate < 50 || mastery.needs_adaptive_practice || mastery.struggle_count >= 2) {
-          failed.push(g);
-        } else {
-          practiced.push(g);
+    // Skip if no graphemes, or if we've already initialized this module
+    if (graphemes.length === 0) return;
+    if (moduleInitializedRef.current === currentModule) return;
+    
+    console.log('[Learn] Initializing graphemes for module:', currentModule);
+    
+    // Create a map of grapheme mastery for quick lookup
+    const masteryMap = new Map();
+    masteryData.forEach(m => masteryMap.set(m.grapheme_id, m));
+    
+    // Categorize graphemes
+    const unanswered = [];
+    const failed = [];
+    const practiced = [];
+    
+    graphemes.forEach(g => {
+      const mastery = masteryMap.get(g.id);
+      if (!mastery || mastery.total_attempts === 0) {
+        unanswered.push(g);
+      } else if (mastery.accuracy_rate < 50 || mastery.needs_adaptive_practice || mastery.struggle_count >= 2) {
+        failed.push(g);
+      } else {
+        practiced.push(g);
+      }
+    });
+    
+    // Shuffle each category for randomization
+    const shuffledUnanswered = shuffleArray(unanswered);
+    const shuffledFailed = shuffleArray(failed);
+    const shuffledPracticed = shuffleArray(practiced);
+    
+    // Combine: unanswered first, then failed, then practiced
+    const smartOrder = [...shuffledUnanswered, ...shuffledFailed, ...shuffledPracticed];
+    
+    console.log('[Learn] Ordered graphemes:', smartOrder.length, 'items');
+    
+    // Update state atomically
+    setOrderedGraphemes(smartOrder);
+    setCurrentPuzzleIndex(0);
+    setIsProcessingAnswer(false);
+    moduleInitializedRef.current = currentModule;
+    puzzleKeyRef.current = 0;
+  }, [graphemes, masteryData, currentModule]);
+  // Load stars from backend profile on mount
+  useEffect(() => {
+    async function fetchStars() {
+      if (user) {
+        const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
+        if (profiles.length > 0) {
+          setStars(profiles[0].total_stars || 0);
         }
-      });
-      
-      // Shuffle each category
-      const shuffledUnanswered = shuffleArray(unanswered);
-      const shuffledFailed = shuffleArray(failed);
-      const shuffledPracticed = shuffleArray(practiced);
-      
-      // Combine: unanswered first, then failed, then practiced
-      const smartOrder = [...shuffledUnanswered, ...shuffledFailed, ...shuffledPracticed];
-      
-      setOrderedGraphemes(smartOrder);
-      setCurrentPuzzleIndex(0);
+      }
     }
-  }, [graphemes, masteryData]);
+    fetchStars();
+  }, [user]);
 
   const recordSessionMutation = useMutation({
     mutationFn: async ({ graphemeId, success, time, attempts }) => {
@@ -115,7 +146,9 @@ export default function Learn() {
 
   const updateMasteryMutation = useMutation({
     mutationFn: async ({ graphemeId, success, time }) => {
-      const existing = masteryData.find(m => m.grapheme_id === graphemeId);
+      // Fetch fresh mastery data to avoid stale cache issues
+      const freshMasteryData = await base44.entities.GraphemeMastery.filter({ user_id: user.id });
+      const existing = freshMasteryData.find(m => m.grapheme_id === graphemeId);
       
       if (existing) {
         const newTotal = existing.total_attempts + 1;
@@ -139,7 +172,10 @@ export default function Learn() {
         else if (confidenceScore >= 70) masteryLevel = 'proficient';
         else if (confidenceScore >= 40) masteryLevel = 'practicing';
         
+        console.log('[Learn] Updating mastery for', graphemeId, '- attempts:', newTotal, 'accuracy:', newAccuracy.toFixed(1) + '%');
+        
         await base44.entities.GraphemeMastery.update(existing.id, {
+          grapheme_id: graphemeId, // Required for backend API
           total_attempts: newTotal,
           successful_attempts: newSuccessful,
           accuracy_rate: newAccuracy,
@@ -152,6 +188,8 @@ export default function Learn() {
           average_response_time: ((existing.average_response_time || 0) * existing.total_attempts + time) / newTotal
         });
       } else {
+        console.log('[Learn] Creating new mastery for', graphemeId);
+        
         await base44.entities.GraphemeMastery.create({
           user_id: user.id,
           grapheme_id: graphemeId,
@@ -173,31 +211,27 @@ export default function Learn() {
     }
   });
 
+  // Update current grapheme and puzzle type when index changes
   useEffect(() => {
     if (orderedGraphemes.length > 0 && currentPuzzleIndex < orderedGraphemes.length) {
       const grapheme = orderedGraphemes[currentPuzzleIndex];
+      console.log('[Learn] Setting grapheme for index', currentPuzzleIndex, ':', grapheme?.transliteration);
       setCurrentGrapheme(grapheme);
+      puzzleKeyRef.current += 1; // Force puzzle component to re-mount
       
       // Smart puzzle type selection based on grapheme complexity
-      const availableTypes = [];
-      
-      // GraphemeMatch works for all graphemes
-      availableTypes.push('grapheme_match');
+      const availableTypes = ['grapheme_match', 'transliteration'];
       
       // DecomposeRebuild only for multi-component graphemes
-      // Ensure components are actually different from the glyph itself and there are at least 2
       if (grapheme.components && grapheme.components.length > 1) {
         availableTypes.push('decompose_rebuild');
       }
-      
-      // Transliteration works for all
-      availableTypes.push('transliteration');
       
       // Weighted random selection
       const rand = Math.random();
       if (availableTypes.includes('decompose_rebuild') && rand > 0.6) {
         setPuzzleType('decompose_rebuild');
-      } else if (availableTypes.includes('transliteration') && rand > 0.3) {
+      } else if (rand > 0.3) {
         setPuzzleType('transliteration');
       } else {
         setPuzzleType('grapheme_match');
@@ -205,55 +239,113 @@ export default function Learn() {
     }
   }, [currentPuzzleIndex, orderedGraphemes]);
 
-  const handleAnswer = async (correct) => {
-    if (!currentGrapheme || !user) return;
+  // Advance to next question - memoized to prevent recreating on each render
+  const advanceToNextQuestion = useCallback(() => {
+    console.log('[Learn] Advancing from index', currentPuzzleIndex, 'to', currentPuzzleIndex + 1);
     
-    if (correct) {
-      setStars(prev => prev + 3);
-      // Update stars in profile
-      const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
-      if (profiles.length > 0) {
-        const currentStars = profiles[0].total_stars || 0;
-        await base44.entities.UserProfile.update(user.id, {
-          total_stars: currentStars + 3
-        });
-      }
+    if (currentPuzzleIndex < orderedGraphemes.length - 1) {
+      setCurrentPuzzleIndex(prev => prev + 1);
+      setIsProcessingAnswer(false);
+    } else {
+      // Module complete - play celebration
+      console.log('[Learn] Module complete!');
+      soundManager.playFanfare();
+      setShowModuleComplete(true);
+      setTimeout(() => {
+        window.location.href = createPageUrl('Home');
+      }, 3000);
+    }
+  }, [currentPuzzleIndex, orderedGraphemes.length]);
+
+  // Handle answer from puzzle component - this is the ONLY place that processes answers
+  const handleAnswer = useCallback(async (correct) => {
+    // Prevent double-processing
+    if (isProcessingAnswer) {
+      console.log('[Learn] Ignoring duplicate answer callback');
+      return;
     }
     
-    await recordSessionMutation.mutateAsync({
-      graphemeId: currentGrapheme.id,
-      success: correct,
-      time: responseTime,
-      attempts: 1
-    });
+    if (!currentGrapheme || !user) {
+      console.log('[Learn] No grapheme or user, skipping answer processing');
+      return;
+    }
     
-    await updateMasteryMutation.mutateAsync({
-      graphemeId: currentGrapheme.id,
-      success: correct,
-      time: responseTime
-    });
+    console.log('[Learn] Processing answer:', correct, 'for grapheme:', currentGrapheme.transliteration);
+    setIsProcessingAnswer(true);
     
-    setTimeout(() => {
-      if (currentPuzzleIndex < orderedGraphemes.length - 1) {
-        setCurrentPuzzleIndex(prev => prev + 1);
-      } else {
-        // Module complete - play celebration
-        soundManager.playFanfare();
-        setShowModuleComplete(true);
-        setTimeout(() => {
-          window.location.href = createPageUrl('Home');
-        }, 3000);
+    // Clear any pending timeout
+    if (answerTimeoutRef.current) {
+      clearTimeout(answerTimeoutRef.current);
+      answerTimeoutRef.current = null;
+    }
+    
+    try {
+      // Update stars if correct
+      if (correct) {
+        setStars(prev => prev + 3);
+        const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
+        if (profiles.length > 0) {
+          const currentStars = profiles[0].total_stars || 0;
+          await base44.entities.UserProfile.update(user.id, {
+            total_stars: currentStars + 3
+          });
+        }
       }
-    }, 500);
-  };
+      
+      // Record session (continue even if this fails)
+      try {
+        await recordSessionMutation.mutateAsync({
+          graphemeId: currentGrapheme.id,
+          success: correct,
+          time: responseTime,
+          attempts: 1
+        });
+      } catch (sessionError) {
+        console.error('[Learn] Error recording session:', sessionError);
+      }
+      
+      // Update mastery (continue even if this fails)
+      try {
+        await updateMasteryMutation.mutateAsync({
+          graphemeId: currentGrapheme.id,
+          success: correct,
+          time: responseTime
+        });
+      } catch (masteryError) {
+        console.error('[Learn] Error updating mastery:', masteryError);
+      }
+      
+      // Always advance to next question
+      answerTimeoutRef.current = setTimeout(() => {
+        advanceToNextQuestion();
+      }, 100);
+      
+    } catch (error) {
+      console.error('[Learn] Error processing answer:', error);
+      // Still advance to next question even on error
+      answerTimeoutRef.current = setTimeout(() => {
+        advanceToNextQuestion();
+      }, 500);
+    }
+  }, [currentGrapheme, user, isProcessingAnswer, responseTime, recordSessionMutation, updateMasteryMutation, advanceToNextQuestion]);
 
-  const generateOptions = () => {
-    if (!currentGrapheme || orderedGraphemes.length < 4) return [];
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (answerTimeoutRef.current) {
+        clearTimeout(answerTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Generate options for GraphemeMatch - uses graphemes from query for stable pool
+  const generateOptions = useCallback(() => {
+    if (!currentGrapheme || graphemes.length < 4) return [];
     
     const options = [currentGrapheme];
     
-    // Filter to same module and similar difficulty only
-    const otherGraphemes = orderedGraphemes.filter(g => 
+    // Filter to same module and similar difficulty
+    const otherGraphemes = graphemes.filter(g => 
       g.id !== currentGrapheme.id && 
       g.module === currentGrapheme.module
     );
@@ -263,7 +355,7 @@ export default function Learn() {
       Math.abs(g.difficulty - currentGrapheme.difficulty) <= 1
     );
     
-    const pool = similarDifficulty.length >= 3 ? similarDifficulty : otherGraphemes;
+    const pool = [...(similarDifficulty.length >= 3 ? similarDifficulty : otherGraphemes)];
     
     while (options.length < 4 && pool.length > 0) {
       const randomIndex = Math.floor(Math.random() * pool.length);
@@ -271,32 +363,33 @@ export default function Learn() {
       pool.splice(randomIndex, 1);
     }
     
-    return options.sort(() => Math.random() - 0.5);
-  };
+    return shuffleArray(options);
+  }, [currentGrapheme, graphemes]);
 
-  const generateTransliterationOptions = () => {
-    if (!currentGrapheme) return [];
+  // Generate options for TransliterationChallenge
+  const generateTransliterationOptions = useCallback(() => {
+    if (!currentGrapheme || graphemes.length < 4) return [];
     
     const correct = currentGrapheme.transliteration;
     const options = [correct];
     
     // Filter to same module
-    const otherGraphemes = orderedGraphemes.filter(g => 
+    const pool = graphemes.filter(g => 
       g.id !== currentGrapheme.id && 
       g.module === currentGrapheme.module
     );
     
-    while (options.length < 4 && otherGraphemes.length > 0) {
-      const randomIndex = Math.floor(Math.random() * otherGraphemes.length);
-      const transliteration = otherGraphemes[randomIndex].transliteration;
+    while (options.length < 4 && pool.length > 0) {
+      const randomIndex = Math.floor(Math.random() * pool.length);
+      const transliteration = pool[randomIndex].transliteration;
       if (!options.includes(transliteration)) {
         options.push(transliteration);
       }
-      otherGraphemes.splice(randomIndex, 1);
+      pool.splice(randomIndex, 1);
     }
     
-    return options.sort(() => Math.random() - 0.5);
-  };
+    return shuffleArray(options);
+  }, [currentGrapheme, graphemes]);
 
   if (isLoading || orderedGraphemes.length === 0) {
     return (
@@ -360,7 +453,7 @@ export default function Learn() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* <AnimatePresence mode="wait"> */}
           <motion.div
-            key={`${currentGrapheme.id}-${puzzleType}`}
+            key={`puzzle-${currentPuzzleIndex}-${puzzleKeyRef.current}`}
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
@@ -368,6 +461,7 @@ export default function Learn() {
           >
             {puzzleType === 'grapheme_match' && (
               <GraphemeMatch
+                key={`gm-${currentPuzzleIndex}`}
                 targetGrapheme={currentGrapheme}
                 options={generateOptions()}
                 onAnswer={handleAnswer}
@@ -377,6 +471,7 @@ export default function Learn() {
             
             {puzzleType === 'decompose_rebuild' && (
               <DecomposeRebuild
+                key={`dr-${currentPuzzleIndex}`}
                 targetGrapheme={currentGrapheme}
                 onAnswer={handleAnswer}
                 onTimeRecorded={setResponseTime}
@@ -385,6 +480,7 @@ export default function Learn() {
             
             {puzzleType === 'transliteration' && (
               <TransliterationChallenge
+                key={`tc-${currentPuzzleIndex}`}
                 targetGrapheme={currentGrapheme}
                 options={generateTransliterationOptions()}
                 onAnswer={handleAnswer}

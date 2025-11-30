@@ -424,7 +424,16 @@ const backendApi = {
         return masteryApi.update(data.grapheme_id, data);
       },
       update: async (id, updates) => {
-        const graphemeId = updates.grapheme_id || id;
+        // The id passed is the mastery record ID, but we need grapheme_id for the API
+        // If grapheme_id is in updates, use it; otherwise we need to look it up
+        // For now, require grapheme_id in updates or pass it directly
+        if (!updates.grapheme_id) {
+          console.error('[base44] GraphemeMastery.update called without grapheme_id in updates');
+        }
+        const graphemeId = updates.grapheme_id;
+        if (!graphemeId) {
+          throw new Error('grapheme_id is required for mastery update');
+        }
         return masteryApi.update(graphemeId, updates);
       }
     },

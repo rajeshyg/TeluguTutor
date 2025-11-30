@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Sparkles } from 'lucide-react';
@@ -16,8 +16,23 @@ export default function GraphemeMatch({
   const [isCorrect, setIsCorrect] = useState(false);
   const [startTime] = useState(Date.now());
   const [showCelebration, setShowCelebration] = useState(false);
+  const hasAnsweredRef = useRef(false); // Prevent double-answer
+  const displayTimeoutRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (displayTimeoutRef.current) {
+        clearTimeout(displayTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSelect = (option) => {
+    // Prevent answering twice
+    if (hasAnsweredRef.current || showResult) return;
+    hasAnsweredRef.current = true;
+    
     const responseTime = Date.now() - startTime;
     const correct = option.glyph === targetGrapheme.glyph;
 
@@ -27,7 +42,6 @@ export default function GraphemeMatch({
 
     // Play appropriate sound
     if (correct) {
-      // Play one of several success sounds randomly
       const successSounds = [
         () => soundManager.playSuccess(),
         () => soundManager.playStar(),
@@ -37,13 +51,13 @@ export default function GraphemeMatch({
       successSounds[idx]();
       setShowCelebration(true);
     } else {
-      // Always play the same error sound
       soundManager.playError();
     }
 
     onTimeRecorded(responseTime);
 
-    setTimeout(() => {
+    // Show result for a moment, then notify parent
+    displayTimeoutRef.current = setTimeout(() => {
       setShowCelebration(false);
       onAnswer(correct);
     }, 1500);

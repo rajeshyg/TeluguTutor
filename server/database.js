@@ -288,6 +288,15 @@ const masteryOps = {
   createOrUpdate: (userId, graphemeId, data) => {
     const existing = masteryOps.getByUserIdAndGrapheme(userId, graphemeId);
     
+    // Helper to sanitize values for SQLite
+    const sanitizeValue = (key, value) => {
+      if (value === undefined || value === null) return null;
+      if (key === 'needs_adaptive_practice') return value ? 1 : 0;
+      if (typeof value === 'boolean') return value ? 1 : 0;
+      if (typeof value === 'number' && !isFinite(value)) return 0;
+      return value;
+    };
+    
     if (existing) {
       const fields = ['confidence_score', 'accuracy_rate', 'total_attempts', 'successful_attempts',
                      'consecutive_successes', 'last_practiced', 'mastery_level', 'average_response_time',
@@ -297,7 +306,9 @@ const masteryOps = {
       if (updates.length === 0) return existing;
       
       const setClause = updates.map(f => `${f} = ?`).join(', ');
-      const values = updates.map(f => data[f]);
+      const values = updates.map(f => sanitizeValue(f, data[f]));
+      
+      console.log('[DB] Updating mastery:', { userId, graphemeId, updates, values });
       
       const stmt = db.prepare(`UPDATE grapheme_mastery SET ${setClause} WHERE id = ?`);
       stmt.run(...values, existing.id);
@@ -312,17 +323,19 @@ const masteryOps = {
       `);
       const result = stmt.run(
         userId, graphemeId,
-        data.confidence_score || 0,
-        data.accuracy_rate || 0,
-        data.total_attempts || 0,
-        data.successful_attempts || 0,
-        data.consecutive_successes || 0,
+        sanitizeValue('confidence_score', data.confidence_score) || 0,
+        sanitizeValue('accuracy_rate', data.accuracy_rate) || 0,
+        sanitizeValue('total_attempts', data.total_attempts) || 0,
+        sanitizeValue('successful_attempts', data.successful_attempts) || 0,
+        sanitizeValue('consecutive_successes', data.consecutive_successes) || 0,
         data.last_practiced || new Date().toISOString(),
         data.mastery_level || 'not_started',
-        data.average_response_time || null,
-        data.needs_adaptive_practice ? 1 : 0,
-        data.struggle_count || 0
+        sanitizeValue('average_response_time', data.average_response_time),
+        sanitizeValue('needs_adaptive_practice', data.needs_adaptive_practice),
+        sanitizeValue('struggle_count', data.struggle_count) || 0
       );
+      
+      console.log('[DB] Created new mastery:', { userId, graphemeId, id: result.lastInsertRowid });
       
       return { id: result.lastInsertRowid, user_id: userId, grapheme_id: graphemeId, ...data };
     }

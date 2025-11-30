@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,23 @@ export default function TransliterationChallenge({
   const [isCorrect, setIsCorrect] = useState(false);
   const [startTime] = useState(Date.now());
   const [showCelebration, setShowCelebration] = useState(false);
+  const hasAnsweredRef = useRef(false); // Prevent double-answer
+  const displayTimeoutRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (displayTimeoutRef.current) {
+        clearTimeout(displayTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSelect = (option) => {
+    // Prevent answering twice
+    if (hasAnsweredRef.current || showResult) return;
+    hasAnsweredRef.current = true;
+    
     const responseTime = Date.now() - startTime;
     const correct = option === targetGrapheme.transliteration;
     
@@ -36,7 +51,8 @@ export default function TransliterationChallenge({
     
     onTimeRecorded(responseTime);
     
-    setTimeout(() => {
+    // Show result for a moment, then notify parent
+    displayTimeoutRef.current = setTimeout(() => {
       setShowCelebration(false);
       onAnswer(correct);
     }, 1500);

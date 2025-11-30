@@ -25,11 +25,11 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (username, password) => {
     try {
       setError(null);
       setLoading(true);
-      const userData = await base44.auth.login(email, password);
+      const userData = await base44.auth.login(username, password);
       setUser(userData);
       return userData;
     } catch (err) {
@@ -40,26 +40,11 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signup = async (email, password, displayName) => {
+  const register = async (username, password, name, email = null, phone = null) => {
     try {
       setError(null);
       setLoading(true);
-      const userData = await base44.auth.signup(email, password, displayName);
-      setUser(userData);
-      return userData;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const register = async (email, phone, name, password = null) => {
-    try {
-      setError(null);
-      setLoading(true);
-      const userData = await base44.auth.register(email, phone, name, password);
+      const userData = await base44.auth.register(username, password, name, email, phone);
       setUser(userData);
       return userData;
     } catch (err) {
@@ -97,21 +82,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const loginWithUsername = async (username) => {
-    try {
-      setError(null);
-      setLoading(true);
-      const userData = await base44.auth.loginWithUsername(username);
-      setUser(userData);
-      return userData;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getUsers = async () => {
     try {
       return await base44.auth.getUsers();
@@ -128,11 +98,9 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     isGuest: user?.isGuest || false,
     login,
-    signup,
     register,
     logout,
     continueAsGuest,
-    loginWithUsername,
     getUsers,
     clearError: () => setError(null)
   };

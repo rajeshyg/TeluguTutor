@@ -15,18 +15,31 @@ db.pragma('foreign_keys = ON');
 
 // Initialize database schema
 function initializeDatabase() {
-  // Users table
+  // Users table with username as primary login identifier
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      phone TEXT NOT NULL,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT,
+      phone TEXT,
       name TEXT NOT NULL,
-      password_hash TEXT,
+      password_hash TEXT NOT NULL,
       is_guest INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+  
+  // Add username column if it doesn't exist (migration for existing databases)
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN username TEXT`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+  
+  // Update existing users without username to use email as username
+  db.exec(`
+    UPDATE users SET username = email WHERE username IS NULL
   `);
 
   // User profiles table (for learning progress)
@@ -108,13 +121,23 @@ function generateToken() {
 
 // User operations
 const userOps = {
-  create: (email, phone, name, password = null) => {
-    const passwordHash = password ? hashPassword(password) : null;
+  create: (username, password, name, email = null, phone = null) => {
+    if (!username || !password || !name) {
+      throw new Error('Username, password, and name are required');
+    }
+    
+    // Check if username already exists
+    const existing = userOps.findByUsername(username);
+    if (existing) {
+      throw new Error('Username already taken');
+    }
+    
+    const passwordHash = hashPassword(password);
     const stmt = db.prepare(`
-      INSERT INTO users (email, phone, name, password_hash)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO users (username, email, phone, name, password_hash)
+      VALUES (?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(email, phone, name, passwordHash);
+    const result = stmt.run(username, email, phone, name, passwordHash);
     
     // Create associated profile
     const profileStmt = db.prepare(`
@@ -123,19 +146,20 @@ const userOps = {
     `);
     profileStmt.run(result.lastInsertRowid, name);
     
-    return { id: result.lastInsertRowid, email, phone, name };
+    return { id: result.lastInsertRowid, username, email, phone, name };
   },
 
   createGuest: () => {
-    const guestEmail = `guest_${Date.now()}@telugututor.local`;
-    const guestPhone = '0000000000';
+    const guestId = `guest_${Date.now()}`;
     const guestName = 'Guest Learner';
+    // Guests get a random password they won't use
+    const guestPassword = crypto.randomBytes(16).toString('hex');
     
     const stmt = db.prepare(`
-      INSERT INTO users (email, phone, name, is_guest)
+      INSERT INTO users (username, name, password_hash, is_guest)
       VALUES (?, ?, ?, 1)
     `);
-    const result = stmt.run(guestEmail, guestPhone, guestName);
+    const result = stmt.run(guestId, guestName, hashPassword(guestPassword));
     
     // Create associated profile
     const profileStmt = db.prepare(`
@@ -144,17 +168,17 @@ const userOps = {
     `);
     profileStmt.run(result.lastInsertRowid, guestName);
     
-    return { id: result.lastInsertRowid, email: guestEmail, phone: guestPhone, name: guestName, isGuest: true };
+    return { id: result.lastInsertRowid, username: guestId, name: guestName, isGuest: true };
+  },
+
+  findByUsername: (username) => {
+    const stmt = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE');
+    return stmt.get(username);
   },
 
   findByEmail: (email) => {
     const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
     return stmt.get(email);
-  },
-
-  findByEmailOrPhone: (emailOrPhone) => {
-    const stmt = db.prepare('SELECT * FROM users WHERE email = ? OR phone = ?');
-    return stmt.get(emailOrPhone, emailOrPhone);
   },
 
   findById: (id) => {
@@ -163,13 +187,19 @@ const userOps = {
   },
 
   getAll: () => {
-    const stmt = db.prepare('SELECT id, email, phone, name, is_guest, created_at FROM users WHERE is_guest = 0');
+    const stmt = db.prepare('SELECT id, username, email, phone, name, is_guest, created_at FROM users WHERE is_guest = 0');
     return stmt.all();
   },
 
   verifyPassword: (user, password) => {
-    if (!user.password_hash) return true; // No password set
+    if (!user.password_hash) return false;
     return user.password_hash === hashPassword(password);
+  },
+
+  updatePassword: (userId, newPassword) => {
+    const passwordHash = hashPassword(newPassword);
+    const stmt = db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+    return stmt.run(passwordHash, userId);
   }
 };
 
@@ -190,7 +220,7 @@ const sessionOps = {
 
   findByToken: (token) => {
     const stmt = db.prepare(`
-      SELECT s.*, u.email, u.phone, u.name, u.is_guest
+      SELECT s.*, u.username, u.email, u.phone, u.name, u.is_guest
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.token = ? AND s.expires_at > datetime('now')

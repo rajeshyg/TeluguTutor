@@ -56,6 +56,7 @@ const authenticate = (req, res, next) => {
 
   req.user = {
     id: session.user_id,
+    username: session.username,
     email: session.email,
     phone: session.phone,
     name: session.name,
@@ -74,6 +75,7 @@ const optionalAuth = (req, res, next) => {
     if (session) {
       req.user = {
         id: session.user_id,
+        username: session.username,
         email: session.email,
         phone: session.phone,
         name: session.name,
@@ -87,76 +89,109 @@ const optionalAuth = (req, res, next) => {
 
 // ============== AUTH ROUTES ==============
 
-// Register new user
+// Register new user with username and password
 app.post('/api/auth/register', (req, res) => {
   try {
-    const { email, phone, name, password } = req.body;
+    const { username, password, name, email, phone } = req.body;
 
     // Validate required fields
-    if (!email || !phone || !name) {
-      return res.status(400).json({ error: 'Email, phone, and name are required' });
+    if (!username || !password || !name) {
+      return res.status(400).json({ error: 'Username, password, and name are required' });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
+    // Validate username format (alphanumeric, underscores, 3-20 chars)
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({ 
+        error: 'Username must be 3-20 characters and contain only letters, numbers, and underscores' 
+      });
     }
 
-    // Validate phone (basic validation)
-    const phoneRegex = /^[0-9]{10,15}$/;
-    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
-      return res.status(400).json({ error: 'Invalid phone number format' });
+    // Validate password strength (minimum 6 characters)
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    // Check if user already exists
-    const existingUser = userOps.findByEmail(email);
+    // Validate name
+    if (name.trim().length < 2) {
+      return res.status(400).json({ error: 'Name must be at least 2 characters' });
+    }
+
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+    }
+
+    // Validate phone if provided
+    if (phone) {
+      const phoneRegex = /^[0-9]{10,15}$/;
+      if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+      }
+    }
+
+    // Check if username already exists
+    const existingUser = userOps.findByUsername(username);
     if (existingUser) {
-      return res.status(400).json({ error: 'Email already registered' });
+      return res.status(400).json({ error: 'Username already taken' });
     }
 
     // Create user
-    const user = userOps.create(email, phone, name, password);
+    const user = userOps.create(username, password, name.trim(), email || null, phone || null);
     
     // Create session
     const session = sessionOps.create(user.id);
 
     res.status(201).json({
-      user: { id: user.id, email: user.email, phone: user.phone, name: user.name },
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      },
       token: session.token
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: error.message || 'Registration failed' });
   }
 });
 
-// Login
+// Login with username and password
 app.post('/api/auth/login', (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const user = userOps.findByEmailOrPhone(email);
+    const user = userOps.findByUsername(username);
     if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Verify password if set
-    if (user.password_hash && password) {
-      if (!userOps.verifyPassword(user, password)) {
-        return res.status(401).json({ error: 'Invalid password' });
-      }
+    // Verify password
+    if (!userOps.verifyPassword(user, password)) {
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Create session
     const session = sessionOps.create(user.id);
 
     res.json({
-      user: { id: user.id, email: user.email, phone: user.phone, name: user.name, isGuest: user.is_guest === 1 },
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        name: user.name, 
+        email: user.email,
+        phone: user.phone,
+        isGuest: user.is_guest === 1 
+      },
       token: session.token
     });
   } catch (error) {
@@ -165,56 +200,19 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
-// Login with username (simplified login)
-app.post('/api/auth/login-username', (req, res) => {
-  try {
-    const { username } = req.body;
-
-    if (!username || username.trim().length < 2) {
-      return res.status(400).json({ error: 'Please enter a name (at least 2 characters)' });
-    }
-
-    const trimmedName = username.trim();
-    
-    // Try to find existing user by name (case-insensitive)
-    const users = userOps.getAll();
-    let user = users.find(u => u.name.toLowerCase() === trimmedName.toLowerCase());
-
-    if (!user) {
-      // Create new user with auto-generated email
-      const email = `${trimmedName.toLowerCase().replace(/\s+/g, '_')}@telugututor.local`;
-      const phone = '0000000000'; // Placeholder for username-based login
-      
-      // Check if email already exists
-      const existingUser = userOps.findByEmail(email);
-      if (existingUser) {
-        user = existingUser;
-      } else {
-        user = userOps.create(email, phone, trimmedName, null);
-      }
-    }
-
-    // Create session
-    const session = sessionOps.create(user.id);
-
-    res.json({
-      user: { id: user.id, email: user.email, phone: user.phone, name: user.name },
-      token: session.token
-    });
-  } catch (error) {
-    console.error('Username login error:', error);
-    res.status(500).json({ error: 'Login failed' });
-  }
-});
-
-// Continue as guest
+// Continue as guest (no password required)
 app.post('/api/auth/guest', (req, res) => {
   try {
     const user = userOps.createGuest();
     const session = sessionOps.create(user.id);
 
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, isGuest: true },
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        name: user.name, 
+        isGuest: true 
+      },
       token: session.token
     });
   } catch (error) {
@@ -240,11 +238,15 @@ app.get('/api/auth/me', authenticate, (req, res) => {
   }
 });
 
-// Get all users (for user selection)
+// Get all users (for user selection - returns only usernames)
 app.get('/api/auth/users', (req, res) => {
   try {
     const users = userOps.getAll();
-    res.json(users.map(u => ({ id: u.id, name: u.name, email: u.email })));
+    res.json(users.map(u => ({ 
+      id: u.id, 
+      username: u.username,
+      name: u.name 
+    })));
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ error: 'Failed to get users' });

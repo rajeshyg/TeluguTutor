@@ -16,8 +16,8 @@ export default function Progress() {
   const [activeTab, setActiveTab] = useState('all');
 
   const { data: masteryData = [] } = useQuery({
-    queryKey: ['allMastery', user?.email],
-    queryFn: () => base44.entities.GraphemeMastery.filter({ user_email: user.email }),
+    queryKey: ['allMastery', user?.id],
+    queryFn: () => base44.entities.GraphemeMastery.filter({ user_id: user.id }),
     enabled: !!user
   });
 
@@ -27,9 +27,9 @@ export default function Progress() {
   });
 
   const { data: recentSessions = [] } = useQuery({
-    queryKey: ['recentSessions', user?.email],
+    queryKey: ['recentSessions', user?.id],
     queryFn: () => base44.entities.PracticeSession.filter(
-      { user_email: user.email },
+      { user_id: user.id },
       '-session_date',
       20
     ),

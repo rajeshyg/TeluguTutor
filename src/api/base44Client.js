@@ -23,6 +23,11 @@ const checkBackend = async () => {
   return useBackend;
 };
 
+// Reset backend check (useful for testing)
+const resetBackendCheck = () => {
+  backendChecked = false;
+};
+
 // LocalStorage fallback (existing implementation)
 const STORAGE_KEYS = {
   MASTERY: 'telugu_tutor_mastery',
@@ -33,23 +38,47 @@ const STORAGE_KEYS = {
 };
 
 const generateUserId = (username) => {
-  return `user_${username.toLowerCase().replace(/\s+/g, '_')}`;
+  return `user_${username.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
 };
 
 const getStorage = (key, defaultVal = []) => {
   if (typeof window === 'undefined') return defaultVal;
-  const stored = localStorage.getItem(key);
-  return stored ? JSON.parse(stored) : defaultVal;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultVal;
+  } catch (error) {
+    console.error(`Error reading from localStorage key ${key}:`, error);
+    return defaultVal;
+  }
 };
 
 const setStorage = (key, val) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(val));
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (error) {
+    console.error(`Error writing to localStorage key ${key}:`, error);
+  }
 };
 
 const removeStorage = (key) => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(key);
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error(`Error removing localStorage key ${key}:`, error);
+  }
+};
+
+// Simple password hashing for localStorage fallback (not secure, just for consistency)
+const simpleHash = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(16);
 };
 
 // Local storage fallback implementation
@@ -62,12 +91,12 @@ const localStorageFallback = {
       }
       
       const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-      let profile = profiles.find(p => p.user_email === currentUser.email);
+      let profile = profiles.find(p => p.user_id === currentUser.id);
       
       if (!profile) {
         profile = {
-          user_email: currentUser.email,
-          display_name: currentUser.name || currentUser.email,
+          user_id: currentUser.id,
+          display_name: currentUser.name,
           total_stars: 0,
           total_practice_time: 0,
           badges_earned: [],
@@ -78,45 +107,99 @@ const localStorageFallback = {
         setStorage(STORAGE_KEYS.PROFILE, profiles);
       }
       
-      return { email: currentUser.email, name: profile.display_name };
+      return { 
+        id: currentUser.id, 
+        username: currentUser.username, 
+        name: currentUser.name,
+        isGuest: currentUser.isGuest || false
+      };
     },
     
-    loginWithUsername: async (username) => {
-      if (!username || username.trim().length < 2) {
-        throw new Error('Please enter a name (at least 2 characters)');
+    login: async (username, password) => {
+      if (!username || !password) {
+        throw new Error('Username and password are required');
       }
       
-      const trimmedName = username.trim();
-      const userId = generateUserId(trimmedName);
       const users = getStorage(STORAGE_KEYS.USERS, []);
-      
-      let user = users.find(u => u.id === userId || u.name?.toLowerCase() === trimmedName.toLowerCase());
+      const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
       
       if (!user) {
-        user = {
-          id: userId,
-          email: userId,
-          name: trimmedName,
-          createdAt: new Date().toISOString()
-        };
-        users.push(user);
-        setStorage(STORAGE_KEYS.USERS, users);
-        
-        const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-        const profile = {
-          user_email: userId,
-          display_name: trimmedName,
-          total_stars: 0,
-          total_practice_time: 0,
-          badges_earned: [],
-          unlocked_word_puzzles: false,
-          last_active: new Date().toISOString()
-        };
-        profiles.push(profile);
-        setStorage(STORAGE_KEYS.PROFILE, profiles);
+        throw new Error('Invalid username or password');
       }
       
-      const userData = { email: user.email || user.id, name: user.name };
+      if (user.passwordHash !== simpleHash(password)) {
+        throw new Error('Invalid username or password');
+      }
+      
+      const userData = { 
+        id: user.id, 
+        username: user.username, 
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      };
+      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
+      
+      return userData;
+    },
+    
+    register: async (username, password, name, email = null, phone = null) => {
+      if (!username || !password || !name) {
+        throw new Error('Username, password, and name are required');
+      }
+      
+      // Validate username
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(username)) {
+        throw new Error('Username must be 3-20 characters and contain only letters, numbers, and underscores');
+      }
+      
+      // Validate password
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
+      }
+      
+      const users = getStorage(STORAGE_KEYS.USERS, []);
+      
+      // Check if username already exists
+      if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        throw new Error('Username already taken');
+      }
+      
+      const userId = generateUserId(username);
+      const user = {
+        id: userId,
+        username: username,
+        name: name.trim(),
+        email: email,
+        phone: phone,
+        passwordHash: simpleHash(password),
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      setStorage(STORAGE_KEYS.USERS, users);
+      
+      // Create profile
+      const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+      const profile = {
+        user_id: userId,
+        display_name: name.trim(),
+        total_stars: 0,
+        total_practice_time: 0,
+        badges_earned: [],
+        unlocked_word_puzzles: false,
+        last_active: new Date().toISOString()
+      };
+      profiles.push(profile);
+      setStorage(STORAGE_KEYS.PROFILE, profiles);
+      
+      const userData = { 
+        id: userId, 
+        username: username, 
+        name: name.trim(),
+        email: email,
+        phone: phone
+      };
       setStorage(STORAGE_KEYS.CURRENT_USER, userData);
       
       return userData;
@@ -124,24 +207,7 @@ const localStorageFallback = {
     
     getUsers: async () => {
       const users = getStorage(STORAGE_KEYS.USERS, []);
-      return users.map(u => ({ id: u.id || u.email, name: u.name }));
-    },
-    
-    signup: async (email, password, displayName) => {
-      return localStorageFallback.auth.loginWithUsername(displayName || email);
-    },
-    
-    login: async (email, password) => {
-      const users = getStorage(STORAGE_KEYS.USERS, []);
-      const user = users.find(u => u.email === email);
-      
-      if (user) {
-        const userData = { email: user.email, name: user.name };
-        setStorage(STORAGE_KEYS.CURRENT_USER, userData);
-        return userData;
-      }
-      
-      return localStorageFallback.auth.loginWithUsername(email);
+      return users.map(u => ({ id: u.id, username: u.username, name: u.name }));
     },
     
     logout: async () => {
@@ -150,13 +216,18 @@ const localStorageFallback = {
     },
     
     continueAsGuest: async () => {
-      const guestEmail = `guest_${Date.now()}@telugututor.local`;
-      const userData = { email: guestEmail, name: 'Guest Learner', isGuest: true };
+      const guestId = `guest_${Date.now()}`;
+      const userData = { 
+        id: guestId, 
+        username: guestId, 
+        name: 'Guest Learner', 
+        isGuest: true 
+      };
       setStorage(STORAGE_KEYS.CURRENT_USER, userData);
       
       const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
       const profile = {
-        user_email: guestEmail,
+        user_id: guestId,
         display_name: 'Guest Learner',
         total_stars: 0,
         total_practice_time: 0,
@@ -167,43 +238,6 @@ const localStorageFallback = {
       };
       profiles.push(profile);
       setStorage(STORAGE_KEYS.PROFILE, profiles);
-      
-      return userData;
-    },
-
-    register: async (email, phone, name, password) => {
-      const userId = generateUserId(name);
-      const users = getStorage(STORAGE_KEYS.USERS, []);
-      
-      if (users.find(u => u.email === email)) {
-        throw new Error('Email already registered');
-      }
-
-      const user = {
-        id: userId,
-        email: email,
-        phone: phone,
-        name: name,
-        createdAt: new Date().toISOString()
-      };
-      users.push(user);
-      setStorage(STORAGE_KEYS.USERS, users);
-      
-      const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-      const profile = {
-        user_email: email,
-        display_name: name,
-        total_stars: 0,
-        total_practice_time: 0,
-        badges_earned: [],
-        unlocked_word_puzzles: false,
-        last_active: new Date().toISOString()
-      };
-      profiles.push(profile);
-      setStorage(STORAGE_KEYS.PROFILE, profiles);
-      
-      const userData = { email, phone, name };
-      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
       
       return userData;
     }
@@ -222,14 +256,18 @@ const localStorageFallback = {
     UserProfile: {
       filter: async (params) => {
         const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+        if (params && params.user_id) {
+          return profiles.filter(p => p.user_id === params.user_id);
+        }
+        // Legacy support for user_email
         if (params && params.user_email) {
-          return profiles.filter(p => p.user_email === params.user_email);
+          return profiles.filter(p => p.user_id === params.user_email || p.user_email === params.user_email);
         }
         return profiles;
       },
       update: async (id, updates) => {
         const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-        const index = profiles.findIndex(p => p.user_email === id);
+        const index = profiles.findIndex(p => p.user_id === id || p.user_email === id);
         if (index !== -1) {
           profiles[index] = { ...profiles[index], ...updates };
           setStorage(STORAGE_KEYS.PROFILE, profiles);
@@ -242,14 +280,25 @@ const localStorageFallback = {
       filter: async (params) => {
         let all = getStorage(STORAGE_KEYS.MASTERY, []);
         if (params) {
-          if (params.user_email) all = all.filter(m => m.user_email === params.user_email);
-          if (params.needs_adaptive_practice) all = all.filter(m => m.needs_adaptive_practice === params.needs_adaptive_practice);
+          if (params.user_id) {
+            all = all.filter(m => m.user_id === params.user_id);
+          }
+          // Legacy support for user_email
+          if (params.user_email) {
+            all = all.filter(m => m.user_id === params.user_email || m.user_email === params.user_email);
+          }
+          if (params.needs_adaptive_practice) {
+            all = all.filter(m => m.needs_adaptive_practice === params.needs_adaptive_practice);
+          }
         }
         return all;
       },
       create: async (data) => {
         const all = getStorage(STORAGE_KEYS.MASTERY, []);
-        const newItem = { ...data, id: Date.now().toString() + Math.random() };
+        const newItem = { 
+          ...data, 
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}` 
+        };
         all.push(newItem);
         setStorage(STORAGE_KEYS.MASTERY, all);
         return newItem;
@@ -262,21 +311,30 @@ const localStorageFallback = {
           setStorage(STORAGE_KEYS.MASTERY, all);
           return all[index];
         }
+        return null;
       }
     },
     PracticeSession: {
       create: async (data) => {
         const all = getStorage(STORAGE_KEYS.SESSIONS, []);
-        const newItem = { ...data, id: Date.now().toString() };
+        const newItem = { 
+          ...data, 
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          created_at: new Date().toISOString()
+        };
         all.push(newItem);
         setStorage(STORAGE_KEYS.SESSIONS, all);
         
+        // Update practice time in profile
         if (data.response_time) {
           const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-          const profileIndex = profiles.findIndex(p => p.user_email === data.user_email);
+          const userId = data.user_id || data.user_email;
+          const profileIndex = profiles.findIndex(p => p.user_id === userId || p.user_email === userId);
           if (profileIndex !== -1) {
             const currentMinutes = profiles[profileIndex].total_practice_time || 0;
-            profiles[profileIndex].total_practice_time = parseFloat((currentMinutes + 0.1).toFixed(1));
+            const additionalMinutes = Math.max(data.response_time / 60000, 0.1);
+            profiles[profileIndex].total_practice_time = parseFloat((currentMinutes + additionalMinutes).toFixed(2));
+            profiles[profileIndex].last_active = new Date().toISOString();
             setStorage(STORAGE_KEYS.PROFILE, profiles);
           }
         }
@@ -293,25 +351,24 @@ const backendApi = {
     me: async () => {
       const user = await authApi.me();
       if (user) {
-        return { email: user.email, name: user.name, isGuest: user.isGuest };
+        return { 
+          id: user.id,
+          username: user.username,
+          name: user.name, 
+          email: user.email,
+          phone: user.phone,
+          isGuest: user.isGuest 
+        };
       }
       return null;
-    },
-    
-    loginWithUsername: async (username) => {
-      return authApi.loginWithUsername(username);
     },
     
     getUsers: async () => {
       return authApi.getUsers();
     },
     
-    signup: async (email, password, displayName) => {
-      return authApi.register(email, '0000000000', displayName, password);
-    },
-    
-    login: async (email, password) => {
-      return authApi.login(email, password);
+    login: async (username, password) => {
+      return authApi.login(username, password);
     },
     
     logout: async () => {
@@ -322,8 +379,8 @@ const backendApi = {
       return authApi.continueAsGuest();
     },
 
-    register: async (email, phone, name, password) => {
-      return authApi.register(email, phone, name, password);
+    register: async (username, password, name, email, phone) => {
+      return authApi.register(username, password, name, email, phone);
     }
   },
   entities: {
@@ -342,7 +399,8 @@ const backendApi = {
         try {
           const profile = await profileApi.get();
           return profile ? [profile] : [];
-        } catch {
+        } catch (error) {
+          console.error('Failed to fetch profile:', error);
           return [];
         }
       },
@@ -357,7 +415,8 @@ const backendApi = {
             return masteryApi.getAdaptive();
           }
           return masteryApi.getAll();
-        } catch {
+        } catch (error) {
+          console.error('Failed to fetch mastery:', error);
           return [];
         }
       },
@@ -390,21 +449,13 @@ const createBase44 = () => {
         await checkBackend();
         return useBackend ? backendApi.auth.me() : localStorageFallback.auth.me();
       },
-      loginWithUsername: async (username) => {
-        await checkBackend();
-        return useBackend ? backendApi.auth.loginWithUsername(username) : localStorageFallback.auth.loginWithUsername(username);
-      },
       getUsers: async () => {
         await checkBackend();
         return useBackend ? backendApi.auth.getUsers() : localStorageFallback.auth.getUsers();
       },
-      signup: async (email, password, displayName) => {
+      login: async (username, password) => {
         await checkBackend();
-        return useBackend ? backendApi.auth.signup(email, password, displayName) : localStorageFallback.auth.signup(email, password, displayName);
-      },
-      login: async (email, password) => {
-        await checkBackend();
-        return useBackend ? backendApi.auth.login(email, password) : localStorageFallback.auth.login(email, password);
+        return useBackend ? backendApi.auth.login(username, password) : localStorageFallback.auth.login(username, password);
       },
       logout: async () => {
         await checkBackend();
@@ -414,9 +465,11 @@ const createBase44 = () => {
         await checkBackend();
         return useBackend ? backendApi.auth.continueAsGuest() : localStorageFallback.auth.continueAsGuest();
       },
-      register: async (email, phone, name, password) => {
+      register: async (username, password, name, email = null, phone = null) => {
         await checkBackend();
-        return useBackend ? backendApi.auth.register(email, phone, name, password) : localStorageFallback.auth.register(email, phone, name, password);
+        return useBackend 
+          ? backendApi.auth.register(username, password, name, email, phone) 
+          : localStorageFallback.auth.register(username, password, name, email, phone);
       }
     },
     entities: {
@@ -465,6 +518,9 @@ const createBase44 = () => {
 };
 
 export const base44 = createBase44();
+
+// Export backend check reset for testing
+export { resetBackendCheck };
 
 // Also export for window global access
 if (typeof window !== 'undefined') {

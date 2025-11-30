@@ -19,10 +19,10 @@ export default function MicroPractice() {
   const [responseTime, setResponseTime] = useState(0);
 
   const { data: strugglingGraphemes = [] } = useQuery({
-    queryKey: ['strugglingForPractice', user?.email],
+    queryKey: ['strugglingForPractice', user?.id],
     queryFn: async () => {
       const struggling = await base44.entities.GraphemeMastery.filter({
-        user_email: user.email,
+        user_id: user.id,
         needs_adaptive_practice: true
       });
       
@@ -43,7 +43,7 @@ export default function MicroPractice() {
   const updateMasteryMutation = useMutation({
     mutationFn: async ({ graphemeId, success }) => {
       const mastery = await base44.entities.GraphemeMastery.filter({
-        user_email: user.email,
+        user_id: user.id,
         grapheme_id: graphemeId
       });
       
@@ -60,7 +60,7 @@ export default function MicroPractice() {
         });
         
         await base44.entities.PracticeSession.create({
-          user_email: user.email,
+          user_id: user.id,
           grapheme_id: graphemeId,
           puzzle_type: puzzleType,
           was_successful: success,

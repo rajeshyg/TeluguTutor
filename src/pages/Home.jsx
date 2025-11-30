@@ -71,25 +71,25 @@ export default function Home() {
   const [showAdaptivePractice, setShowAdaptivePractice] = useState(false);
 
   const { data: profile } = useQuery({
-    queryKey: ['userProfile', user?.email],
+    queryKey: ['userProfile', user?.id],
     queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+      const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
       return profiles[0] || null;
     },
     enabled: !!user
   });
 
   const { data: masteryData = [] } = useQuery({
-    queryKey: ['allMastery', user?.email],
-    queryFn: () => base44.entities.GraphemeMastery.filter({ user_email: user.email }),
+    queryKey: ['allMastery', user?.id],
+    queryFn: () => base44.entities.GraphemeMastery.filter({ user_id: user.id }),
     enabled: !!user
   });
 
   const { data: strugglingGraphemes = [] } = useQuery({
-    queryKey: ['strugglingGraphemes', user?.email],
+    queryKey: ['strugglingGraphemes', user?.id],
     queryFn: async () => {
       const struggling = await base44.entities.GraphemeMastery.filter({ 
-        user_email: user.email,
+        user_id: user.id,
         needs_adaptive_practice: true
       });
       

@@ -46,31 +46,21 @@ const apiRequest = async (endpoint, options = {}) => {
 
 // Auth API
 export const authApi = {
-  // Register new user
-  register: async (email, phone, name, password = null) => {
+  // Register new user with username and password
+  register: async (username, password, name, email = null, phone = null) => {
     const data = await apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, phone, name, password })
+      body: JSON.stringify({ username, password, name, email, phone })
     });
     setToken(data.token);
     return data.user;
   },
 
-  // Login with email and password
-  login: async (email, password) => {
+  // Login with username and password
+  login: async (username, password) => {
     const data = await apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-    setToken(data.token);
-    return data.user;
-  },
-
-  // Login with username (simplified)
-  loginWithUsername: async (username) => {
-    const data = await apiRequest('/auth/login-username', {
-      method: 'POST',
-      body: JSON.stringify({ username })
+      body: JSON.stringify({ username, password })
     });
     setToken(data.token);
     return data.user;
@@ -99,7 +89,7 @@ export const authApi = {
     }
   },
 
-  // Get all users
+  // Get all users (for user selection display)
   getUsers: async () => {
     try {
       return await apiRequest('/auth/users');

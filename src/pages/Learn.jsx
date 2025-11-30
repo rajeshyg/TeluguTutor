@@ -54,10 +54,10 @@ export default function Learn() {
   });
 
   const { data: masteryData = [] } = useQuery({
-    queryKey: ['mastery', user?.email, currentModule],
+    queryKey: ['mastery', user?.id, currentModule],
     queryFn: async () => {
       if (!user) return [];
-      return await base44.entities.GraphemeMastery.filter({ user_email: user.email });
+      return await base44.entities.GraphemeMastery.filter({ user_id: user.id });
     },
     enabled: !!user
   });
@@ -101,7 +101,7 @@ export default function Learn() {
   const recordSessionMutation = useMutation({
     mutationFn: async ({ graphemeId, success, time, attempts }) => {
       await base44.entities.PracticeSession.create({
-        user_email: user.email,
+        user_id: user.id,
         grapheme_id: graphemeId,
         puzzle_type: puzzleType,
         was_successful: success,
@@ -153,7 +153,7 @@ export default function Learn() {
         });
       } else {
         await base44.entities.GraphemeMastery.create({
-          user_email: user.email,
+          user_id: user.id,
           grapheme_id: graphemeId,
           total_attempts: 1,
           successful_attempts: success ? 1 : 0,
@@ -211,10 +211,10 @@ export default function Learn() {
     if (correct) {
       setStars(prev => prev + 3);
       // Update stars in profile
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user.email });
+      const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
       if (profiles.length > 0) {
         const currentStars = profiles[0].total_stars || 0;
-        await base44.entities.UserProfile.update(user.email, {
+        await base44.entities.UserProfile.update(user.id, {
           total_stars: currentStars + 3
         });
       }

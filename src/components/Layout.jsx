@@ -36,7 +36,7 @@ export default function Layout() {
               {user && (
                 <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-secondary/50 rounded-full text-sm text-muted-foreground">
                   <User className="w-3.5 h-3.5" />
-                  <span>{user.name || user.email}</span>
+                  <span>{user.name || user.username}</span>
                   {isGuest && <span className="text-xs">(Guest)</span>}
                 </div>
               )}

@@ -40,6 +40,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Authentication middleware
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -337,11 +342,26 @@ app.post('/api/mastery', authenticate, (req, res) => {
   try {
     const { grapheme_id, ...data } = req.body;
     
+    console.log('[API] POST /api/mastery - Received:', { 
+      grapheme_id, 
+      total_attempts: data.total_attempts,
+      mastery_level: data.mastery_level,
+      data_keys: Object.keys(data)
+    });
+    
     if (!grapheme_id) {
       return res.status(400).json({ error: 'grapheme_id is required' });
     }
 
     const mastery = masteryOps.createOrUpdate(req.user.id, grapheme_id, data);
+    
+    console.log('[API] POST /api/mastery - Result:', {
+      id: mastery.id,
+      grapheme_id: mastery.grapheme_id,
+      total_attempts: mastery.total_attempts,
+      mastery_level: mastery.mastery_level
+    });
+    
     res.json({
       ...mastery,
       needs_adaptive_practice: mastery.needs_adaptive_practice === 1,

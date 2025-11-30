@@ -297,6 +297,16 @@ const masteryOps = {
       return value;
     };
     
+    console.log('[DB] createOrUpdate:', { 
+      userId, 
+      graphemeId, 
+      existingId: existing?.id,
+      existingAttempts: existing?.total_attempts,
+      existingLevel: existing?.mastery_level,
+      incomingAttempts: data.total_attempts,
+      incomingLevel: data.mastery_level
+    });
+    
     if (existing) {
       const fields = ['confidence_score', 'accuracy_rate', 'total_attempts', 'successful_attempts',
                      'consecutive_successes', 'last_practiced', 'mastery_level', 'average_response_time',

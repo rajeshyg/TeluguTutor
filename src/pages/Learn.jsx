@@ -172,7 +172,7 @@ export default function Learn() {
         else if (confidenceScore >= 70) masteryLevel = 'proficient';
         else if (confidenceScore >= 40) masteryLevel = 'practicing';
         
-        console.log('[Learn] Updating mastery for', graphemeId, '- attempts:', newTotal, 'accuracy:', newAccuracy.toFixed(1) + '%');
+        console.log('[Learn] Mastery updated:', graphemeId, '→', newTotal, 'attempts,', masteryLevel);
         
         await base44.entities.GraphemeMastery.update(existing.id, {
           grapheme_id: graphemeId, // Required for backend API
@@ -338,8 +338,8 @@ export default function Learn() {
     };
   }, []);
 
-  // Generate options for GraphemeMatch - uses graphemes from query for stable pool
-  const generateOptions = useCallback(() => {
+  // Memoize options for GraphemeMatch - only regenerate when puzzle changes
+  const graphemeMatchOptions = useMemo(() => {
     if (!currentGrapheme || graphemes.length < 4) return [];
     
     const options = [currentGrapheme];
@@ -364,10 +364,10 @@ export default function Learn() {
     }
     
     return shuffleArray(options);
-  }, [currentGrapheme, graphemes]);
+  }, [currentGrapheme?.id, currentPuzzleIndex, graphemes]); // Only regenerate when grapheme changes
 
-  // Generate options for TransliterationChallenge
-  const generateTransliterationOptions = useCallback(() => {
+  // Memoize options for TransliterationChallenge
+  const transliterationOptions = useMemo(() => {
     if (!currentGrapheme || graphemes.length < 4) return [];
     
     const correct = currentGrapheme.transliteration;
@@ -389,7 +389,7 @@ export default function Learn() {
     }
     
     return shuffleArray(options);
-  }, [currentGrapheme, graphemes]);
+  }, [currentGrapheme?.id, currentPuzzleIndex, graphemes]); // Only regenerate when grapheme changes
 
   if (isLoading || orderedGraphemes.length === 0) {
     return (
@@ -463,7 +463,7 @@ export default function Learn() {
               <GraphemeMatch
                 key={`gm-${currentPuzzleIndex}`}
                 targetGrapheme={currentGrapheme}
-                options={generateOptions()}
+                options={graphemeMatchOptions}
                 onAnswer={handleAnswer}
                 onTimeRecorded={setResponseTime}
               />
@@ -482,7 +482,7 @@ export default function Learn() {
               <TransliterationChallenge
                 key={`tc-${currentPuzzleIndex}`}
                 targetGrapheme={currentGrapheme}
-                options={generateTransliterationOptions()}
+                options={transliterationOptions}
                 onAnswer={handleAnswer}
                 onTimeRecorded={setResponseTime}
               />

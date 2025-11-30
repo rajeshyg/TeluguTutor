@@ -262,10 +262,30 @@ useEffect(() => {
 | ISSUE-006 | Component State | ✅ Fixed | Ref Management | 3 |
 | ISSUE-007 | Algorithm | ✅ Fixed | Effect Dependency | 1 |
 
-**Total Issues Fixed**: 7  
+**Total Issues Fixed**: 5 out of 8  
 **Total Files Modified**: 8  
-**Commit**: `37e96ca`  
-**Date**: November 30, 2025
+**Commit**: 37e96ca (main fixes) + acce8ff (docs)  
+**Date**: November 30, 2025  
+**Status**: 🟡 PARTIAL - 2 Major Issues Remain + 1 New Issue Found
+
+### Issues Still Outstanding (Next Session)
+
+#### ISSUE-004: Progress Filters Broken ❌
+- **Status**: NOT FIXED - mastery_level field not updating in database
+- **Symptoms**: Proficient/Practicing categories show 0 results in Progress page
+- **Investigation Needed**: Trace mastery update mutation to see if mastery_level is included in UPDATE query
+
+#### ISSUE-005: Attempts Show 1 ❌
+- **Status**: NOT FIXED - total_attempts not incrementing
+- **Symptoms**: All mastery records stuck at "Attempts: 1"
+- **Investigation Needed**: Check if total_attempts field is being excluded from mutation payload
+
+#### ISSUE-008: Options Shuffle After Answer (NEW) ⚠️
+- **Status**: NEW - Not documented in original fixes
+- **Description**: After answering, puzzle options rearrange for 2-3 seconds before advancing
+- **Severity**: LOW (cosmetic but annoying)
+- **Likely Cause**: Motion animation during result display phase
+- **Investigation**: Check GraphemeMatch.jsx animation wrapper
 
 ---
 

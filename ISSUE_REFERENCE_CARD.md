@@ -102,4 +102,11 @@
 ✅ Filters work on Progress page  
 ✅ Attempt counts increment  
 
-**Status**: PRODUCTION READY
+**Status**: 🟡 PARTIAL - 5/8 Issues Resolved (Nov 30, 2025)
+
+### UNRESOLVED ISSUES (Next Session)
+- ❌ ISSUE-004: Progress page filters still show no results
+- ❌ ISSUE-005: Attempt counts still show 1 (not incrementing)  
+- ⚠️ ISSUE-008: Options shuffle 2-3 seconds after answering (new)
+
+See `SESSION_STATUS_NOV30.md` for detailed investigation notes.

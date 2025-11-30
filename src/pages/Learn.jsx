@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,8 +10,20 @@ import GraphemeMatch from '@/components/puzzles/GraphemeMatch';
 import DecomposeRebuild from '@/components/puzzles/DecomposeRebuild';
 import TransliterationChallenge from '@/components/puzzles/TransliterationChallenge';
 import { useAuth } from '@/contexts/AuthContext';
+import { soundManager } from '@/utils/sounds';
+import { Celebration } from '@/components/learning/Celebration';
 
 const PUZZLE_TYPES = ['grapheme_match', 'decompose_rebuild', 'transliteration'];
+
+// Shuffle array using Fisher-Yates algorithm
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 export default function Learn() {
   const queryClient = useQueryClient();
@@ -23,6 +35,8 @@ export default function Learn() {
   const [sessionStart, setSessionStart] = useState(Date.now());
   const [stars, setStars] = useState(0);
   const [responseTime, setResponseTime] = useState(0);
+  const [orderedGraphemes, setOrderedGraphemes] = useState([]);
+  const [showModuleComplete, setShowModuleComplete] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -47,6 +61,42 @@ export default function Learn() {
     },
     enabled: !!user
   });
+
+  // Smart ordering: prioritize unanswered and failed questions, then randomize
+  useEffect(() => {
+    if (graphemes.length > 0 && masteryData !== undefined) {
+      // Create a map of grapheme mastery for quick lookup
+      const masteryMap = new Map();
+      masteryData.forEach(m => masteryMap.set(m.grapheme_id, m));
+      
+      // Categorize graphemes
+      const unanswered = []; // Never attempted
+      const failed = [];     // Attempted but low accuracy/struggling
+      const practiced = [];  // Already practiced with decent accuracy
+      
+      graphemes.forEach(g => {
+        const mastery = masteryMap.get(g.id);
+        if (!mastery || mastery.total_attempts === 0) {
+          unanswered.push(g);
+        } else if (mastery.accuracy_rate < 50 || mastery.needs_adaptive_practice || mastery.struggle_count >= 2) {
+          failed.push(g);
+        } else {
+          practiced.push(g);
+        }
+      });
+      
+      // Shuffle each category
+      const shuffledUnanswered = shuffleArray(unanswered);
+      const shuffledFailed = shuffleArray(failed);
+      const shuffledPracticed = shuffleArray(practiced);
+      
+      // Combine: unanswered first, then failed, then practiced
+      const smartOrder = [...shuffledUnanswered, ...shuffledFailed, ...shuffledPracticed];
+      
+      setOrderedGraphemes(smartOrder);
+      setCurrentPuzzleIndex(0);
+    }
+  }, [graphemes, masteryData]);
 
   const recordSessionMutation = useMutation({
     mutationFn: async ({ graphemeId, success, time, attempts }) => {
@@ -124,8 +174,8 @@ export default function Learn() {
   });
 
   useEffect(() => {
-    if (graphemes.length > 0 && currentPuzzleIndex < graphemes.length) {
-      const grapheme = graphemes[currentPuzzleIndex];
+    if (orderedGraphemes.length > 0 && currentPuzzleIndex < orderedGraphemes.length) {
+      const grapheme = orderedGraphemes[currentPuzzleIndex];
       setCurrentGrapheme(grapheme);
       
       // Smart puzzle type selection based on grapheme complexity
@@ -153,7 +203,7 @@ export default function Learn() {
         setPuzzleType('grapheme_match');
       }
     }
-  }, [currentPuzzleIndex, graphemes]);
+  }, [currentPuzzleIndex, orderedGraphemes]);
 
   const handleAnswer = async (correct) => {
     if (!currentGrapheme || !user) return;
@@ -184,23 +234,26 @@ export default function Learn() {
     });
     
     setTimeout(() => {
-      if (currentPuzzleIndex < graphemes.length - 1) {
+      if (currentPuzzleIndex < orderedGraphemes.length - 1) {
         setCurrentPuzzleIndex(prev => prev + 1);
       } else {
-        // Module complete
-        alert(`Module complete! You earned ${stars} stars! 🎉`);
-        window.location.href = createPageUrl('Home');
+        // Module complete - play celebration
+        soundManager.playFanfare();
+        setShowModuleComplete(true);
+        setTimeout(() => {
+          window.location.href = createPageUrl('Home');
+        }, 3000);
       }
     }, 500);
   };
 
   const generateOptions = () => {
-    if (!currentGrapheme || graphemes.length < 4) return [];
+    if (!currentGrapheme || orderedGraphemes.length < 4) return [];
     
     const options = [currentGrapheme];
     
     // Filter to same module and similar difficulty only
-    const otherGraphemes = graphemes.filter(g => 
+    const otherGraphemes = orderedGraphemes.filter(g => 
       g.id !== currentGrapheme.id && 
       g.module === currentGrapheme.module
     );
@@ -228,7 +281,7 @@ export default function Learn() {
     const options = [correct];
     
     // Filter to same module
-    const otherGraphemes = graphemes.filter(g => 
+    const otherGraphemes = orderedGraphemes.filter(g => 
       g.id !== currentGrapheme.id && 
       g.module === currentGrapheme.module
     );
@@ -245,7 +298,7 @@ export default function Learn() {
     return options.sort(() => Math.random() - 0.5);
   };
 
-  if (isLoading) {
+  if (isLoading || orderedGraphemes.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-background">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -286,7 +339,7 @@ export default function Learn() {
               </div>
               
               <div className="text-sm text-muted-foreground">
-                {currentPuzzleIndex + 1} / {graphemes.length}
+                {currentPuzzleIndex + 1} / {orderedGraphemes.length}
               </div>
             </div>
           </div>
@@ -296,7 +349,7 @@ export default function Learn() {
             <motion.div 
               className="bg-primary h-1.5 rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${((currentPuzzleIndex + 1) / graphemes.length) * 100}%` }}
+              animate={{ width: `${((currentPuzzleIndex + 1) / orderedGraphemes.length) * 100}%` }}
               transition={{ duration: 0.5 }}
             />
           </div>
@@ -341,6 +394,50 @@ export default function Learn() {
           </motion.div>
         {/* </AnimatePresence> */}
       </div>
+
+      {/* Module Complete Celebration */}
+      <AnimatePresence>
+        {showModuleComplete && (
+          <>
+            <Celebration show={true} type="epic" />
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="text-center p-8 bg-card rounded-3xl shadow-2xl border border-border max-w-sm mx-4"
+                initial={{ scale: 0, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", duration: 0.6 }}
+              >
+                <motion.div
+                  className="text-6xl mb-4"
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 10, -10, 0]
+                  }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1 }}
+                >
+                  🎉
+                </motion.div>
+                <h2 className="text-3xl font-bold text-foreground mb-2">
+                  Module Complete!
+                </h2>
+                <div className="flex items-center justify-center gap-2 text-2xl text-primary mb-4">
+                  <Star className="w-8 h-8 fill-primary" />
+                  <span className="font-bold">{stars}</span>
+                  <span className="text-muted-foreground text-lg">stars earned!</span>
+                </div>
+                <p className="text-muted-foreground">
+                  Great job! Keep practicing to master more letters!
+                </p>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

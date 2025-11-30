@@ -130,12 +130,12 @@ export default function Progress() {
       {/* Mastery Details */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <Tabs defaultValue="all" onValueChange={setActiveTab}>
-          <TabsList className="mb-4 bg-muted">
-            <TabsTrigger value="all">All ({masteryData.length})</TabsTrigger>
-            <TabsTrigger value="mastered">Mastered ({stats.mastered})</TabsTrigger>
-            <TabsTrigger value="proficient">Proficient ({stats.proficient})</TabsTrigger>
-            <TabsTrigger value="practicing">Practicing ({stats.practicing})</TabsTrigger>
-            <TabsTrigger value="learning">Learning ({stats.learning})</TabsTrigger>
+          <TabsList className="mb-4 bg-muted h-auto p-1 flex flex-wrap gap-1">
+            <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">All ({masteryData.length})</TabsTrigger>
+            <TabsTrigger value="mastered" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Mastered ({stats.mastered})</TabsTrigger>
+            <TabsTrigger value="proficient" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Proficient ({stats.proficient})</TabsTrigger>
+            <TabsTrigger value="practicing" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Practicing ({stats.practicing})</TabsTrigger>
+            <TabsTrigger value="learning" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5">Learning ({stats.learning})</TabsTrigger>
           </TabsList>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

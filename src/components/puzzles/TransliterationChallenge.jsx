@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { soundManager } from '@/utils/sounds';
+import { Celebration, FloatingStars } from '@/components/learning/Celebration';
 
 export default function TransliterationChallenge({ 
   targetGrapheme, 
@@ -13,6 +15,7 @@ export default function TransliterationChallenge({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [startTime] = useState(Date.now());
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleSelect = (option) => {
     const responseTime = Date.now() - startTime;
@@ -22,15 +25,29 @@ export default function TransliterationChallenge({
     setIsCorrect(correct);
     setShowResult(true);
     
+    // Play appropriate sound
+    if (correct) {
+      soundManager.playSuccess();
+      soundManager.playStar();
+      setShowCelebration(true);
+    } else {
+      soundManager.playError();
+    }
+    
     onTimeRecorded(responseTime);
     
     setTimeout(() => {
+      setShowCelebration(false);
       onAnswer(correct);
     }, 1500);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+    <div className="flex flex-col items-center justify-center min-h-[500px] p-6 relative">
+      {/* Celebration effects */}
+      <Celebration show={showCelebration} type="confetti" />
+      <FloatingStars show={showCelebration} count={5} />
+      
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

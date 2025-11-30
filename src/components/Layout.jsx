@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { LogOut, User } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import Settings from './Settings';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { createPageUrl } from '@/utils';
@@ -33,24 +34,26 @@ export default function Layout() {
             </div>
             <div className="flex items-center gap-2">
               {user && (
-                <div className="flex items-center gap-2">
-                  <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-secondary/50 rounded-full text-sm text-muted-foreground">
-                    <User className="w-3.5 h-3.5" />
-                    <span>{user.name || user.email}</span>
-                    {isGuest && <span className="text-xs">(Guest)</span>}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="text-muted-foreground hover:text-foreground"
-                    title="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
+                <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-secondary/50 rounded-full text-sm text-muted-foreground">
+                  <User className="w-3.5 h-3.5" />
+                  <span>{user.name || user.email}</span>
+                  {isGuest && <span className="text-xs">(Guest)</span>}
                 </div>
               )}
+              <Settings />
               <ThemeToggle />
+
+              {/* Logout button */}
+              {user && (
+                <button
+                  onClick={handleLogout}
+                  className="ml-2 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors shadow-sm"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              )}
             </div>
           </div>
         </header>

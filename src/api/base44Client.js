@@ -8,6 +8,11 @@ const STORAGE_KEYS = {
   USERS: 'telugu_tutor_users'
 };
 
+// Generate a simple user ID from username
+const generateUserId = (username) => {
+  return `user_${username.toLowerCase().replace(/\s+/g, '_')}`;
+};
+
 const getStorage = (key, defaultVal = []) => {
   if (typeof window === 'undefined') return defaultVal;
   const stored = localStorage.getItem(key);
@@ -51,7 +56,7 @@ const defaultBase44 = {
       if (!profile) {
         profile = {
           user_email: currentUser.email,
-          display_name: currentUser.name || currentUser.email.split('@')[0],
+          display_name: currentUser.name || currentUser.email,
           total_stars: 0,
           total_practice_time: 0,
           badges_earned: [],
@@ -65,72 +70,82 @@ const defaultBase44 = {
       return { email: currentUser.email, name: profile.display_name };
     },
     
-    // Sign up a new user
-    signup: async (email, password, displayName) => {
-      if (!email || !password) {
-        throw new Error('Email and password are required');
+    // Simple login with just username (creates account if doesn't exist)
+    loginWithUsername: async (username) => {
+      if (!username || username.trim().length < 2) {
+        throw new Error('Please enter a name (at least 2 characters)');
       }
       
+      const trimmedName = username.trim();
+      const userId = generateUserId(trimmedName);
       const users = getStorage(STORAGE_KEYS.USERS, []);
       
-      // Check if user already exists
-      if (users.find(u => u.email === email)) {
-        throw new Error('User already exists');
+      // Find existing user or create new one
+      let user = users.find(u => u.id === userId || u.name?.toLowerCase() === trimmedName.toLowerCase());
+      
+      if (!user) {
+        // Create new user
+        user = {
+          id: userId,
+          email: userId, // Use ID as email for compatibility
+          name: trimmedName,
+          createdAt: new Date().toISOString()
+        };
+        users.push(user);
+        setStorage(STORAGE_KEYS.USERS, users);
+        
+        // Create profile for new user
+        const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+        const profile = {
+          user_email: userId,
+          display_name: trimmedName,
+          total_stars: 0,
+          total_practice_time: 0,
+          badges_earned: [],
+          unlocked_word_puzzles: false,
+          last_active: new Date().toISOString()
+        };
+        profiles.push(profile);
+        setStorage(STORAGE_KEYS.PROFILE, profiles);
       }
       
-      // Create new user
-      const newUser = {
-        email,
-        passwordHash: simpleHash(password),
-        name: displayName || email.split('@')[0],
-        createdAt: new Date().toISOString()
-      };
-      users.push(newUser);
-      setStorage(STORAGE_KEYS.USERS, users);
-      
-      // Auto-login after signup
-      const userData = { email: newUser.email, name: newUser.name };
+      // Set current user
+      const userData = { email: user.email || user.id, name: user.name };
       setStorage(STORAGE_KEYS.CURRENT_USER, userData);
-      
-      // Create profile for new user
-      const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-      const profile = {
-        user_email: email,
-        display_name: newUser.name,
-        total_stars: 0,
-        total_practice_time: 0,
-        badges_earned: [],
-        unlocked_word_puzzles: false,
-        last_active: new Date().toISOString()
-      };
-      profiles.push(profile);
-      setStorage(STORAGE_KEYS.PROFILE, profiles);
       
       return userData;
     },
     
-    // Login existing user
-    login: async (email, password) => {
-      if (!email || !password) {
-        throw new Error('Email and password are required');
+    // Get list of all users (for user selection)
+    getUsers: async () => {
+      const users = getStorage(STORAGE_KEYS.USERS, []);
+      return users.map(u => ({ id: u.id || u.email, name: u.name }));
+    },
+    
+    // Sign up a new user (legacy - now uses loginWithUsername)
+    signup: async (email, password, displayName) => {
+      if (!displayName && !email) {
+        throw new Error('Name is required');
       }
       
+      // Use the simple username login instead
+      return defaultBase44.auth.loginWithUsername(displayName || email);
+    },
+    
+    // Login existing user (legacy - for backward compatibility)
+    login: async (email, password) => {
+      // For backward compatibility, try to find user by email
       const users = getStorage(STORAGE_KEYS.USERS, []);
       const user = users.find(u => u.email === email);
       
-      if (!user) {
-        throw new Error('User not found');
+      if (user) {
+        const userData = { email: user.email, name: user.name };
+        setStorage(STORAGE_KEYS.CURRENT_USER, userData);
+        return userData;
       }
       
-      if (user.passwordHash !== simpleHash(password)) {
-        throw new Error('Invalid password');
-      }
-      
-      // Set current user
-      const userData = { email: user.email, name: user.name };
-      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
-      
-      return userData;
+      // Otherwise, treat email as username
+      return defaultBase44.auth.loginWithUsername(email);
     },
     
     // Logout current user

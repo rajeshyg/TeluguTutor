@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
   BookOpen, Trophy, Target, Sparkles, Lock, 
-  TrendingUp, Clock, Award 
+  TrendingUp, Percent, Award 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -147,13 +147,27 @@ export default function Home() {
     return profile?.unlocked_word_puzzles || false;
   };
 
+  // Calculate stats inline with Progress page
+  const stats = useMemo(() => {
+    const totalAttempts = masteryData.reduce((sum, m) => sum + (m.total_attempts || 0), 0);
+    const totalSuccessful = masteryData.reduce((sum, m) => sum + (m.successful_attempts || 0), 0);
+    const accuracy = totalAttempts > 0 ? Math.round((totalSuccessful / totalAttempts) * 100) : 0;
+    const mastered = masteryData.filter(m => m.mastery_level === 'mastered').length;
+    
+    return {
+      accuracy,
+      totalAttempts,
+      mastered
+    };
+  }, [masteryData]);
+
   return (
     <div className="w-full h-full bg-background transition-colors duration-300 overflow-y-auto">
       {/* Header Section */}
       <div className="bg-card border-b border-border shadow-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-bold text-foreground">
                 Dashboard
               </h1>
@@ -161,43 +175,57 @@ export default function Home() {
                 Welcome back, {profile?.display_name || 'Learner'}
               </p>
             </div>
-            
-            <Link to={createPageUrl('Progress')}>
-              <Button size="sm" variant="outline" className="gap-2 h-8 text-xs">
-                <Trophy className="w-3.5 h-3.5" />
-                Progress
-              </Button>
-            </Link>
+            {/* Progress button removed */}
           </div>
 
-          {/* Compact Stats Bar */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Trophy className="w-3.5 h-3.5 text-primary" />
-                <span className="text-lg font-bold text-foreground leading-none">{profile?.total_stars || 0}</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground font-medium uppercase">Stars</span>
-            </div>
-
-            <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Target className="w-3.5 h-3.5 text-primary" />
-                <span className="text-lg font-bold text-foreground leading-none">
-                  {masteryData.filter(m => m.mastery_level === 'mastered').length}
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground font-medium uppercase">Mastered</span>
-            </div>
-
-            <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-                <span className="text-lg font-bold text-foreground leading-none">
-                  {profile?.total_practice_time || 0}
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground font-medium uppercase">Minutes</span>
+          {/* Compact Stats Bar - Horizontal Scroll on Mobile */}
+          <div className="overflow-x-auto -mx-4 px-4">
+            <div className="flex gap-2 w-max sm:w-full">
+              {/* Make each stats card a link to /progress */}
+              <Link to={createPageUrl('Progress')} className="flex-shrink-0 sm:flex-1 min-w-max sm:min-w-0">
+                <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center hover:shadow-md cursor-pointer">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <Trophy className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-lg font-bold text-foreground leading-none">{profile?.total_stars || 0}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase">Stars</span>
+                </div>
+              </Link>
+              <Link to={createPageUrl('Progress')} className="flex-shrink-0 sm:flex-1 min-w-max sm:min-w-0">
+                <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center hover:shadow-md cursor-pointer">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <Target className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-lg font-bold text-foreground leading-none">
+                      {stats.mastered}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase">Mastered</span>
+                </div>
+              </Link>
+              <Link to={createPageUrl('Progress')} className="flex-shrink-0 sm:flex-1 min-w-max sm:min-w-0">
+                <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center hover:shadow-md cursor-pointer">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-lg font-bold text-foreground leading-none">
+                      {stats.accuracy}%
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase">Accuracy</span>
+                </div>
+              </Link>
+              <Link to={createPageUrl('Progress')} className="flex-shrink-0 sm:flex-1 min-w-max sm:min-w-0">
+                <div className="bg-secondary/30 border border-border rounded-lg p-2 flex flex-col items-center justify-center text-center hover:shadow-md cursor-pointer">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-lg font-bold text-foreground leading-none">
+                      {masteryData.length > 0 
+                        ? Math.round(masteryData.reduce((sum, m) => sum + (m.confidence_score || 0), 0) / masteryData.length) 
+                        : 0}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase">Confidence</span>
+                </div>
+              </Link>
             </div>
           </div>
         </div>

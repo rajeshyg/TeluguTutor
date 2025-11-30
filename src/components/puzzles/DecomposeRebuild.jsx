@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, RotateCcw, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { soundManager } from '@/utils/sounds';
+import { Celebration, FloatingStars } from '@/components/learning/Celebration';
 
 export default function DecomposeRebuild({ 
   targetGrapheme, 
@@ -14,6 +16,7 @@ export default function DecomposeRebuild({
   const [startTime] = useState(Date.now());
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     // Shuffle components
@@ -24,16 +27,19 @@ export default function DecomposeRebuild({
     setPlacedTiles([]);
     setShowResult(false);
     setShowHint(false);
+    setShowCelebration(false);
   }, [targetGrapheme]);
 
   const handleDrop = (tileId) => {
     const tile = componentTiles.find(t => t.id === tileId);
     if (tile && !placedTiles.find(p => p.id === tileId)) {
+      soundManager.playClick();
       setPlacedTiles([...placedTiles, tile]);
     }
   };
 
   const handleRemove = (tileId) => {
+    soundManager.playClick();
     setPlacedTiles(placedTiles.filter(t => t.id !== tileId));
   };
 
@@ -46,17 +52,32 @@ export default function DecomposeRebuild({
     setShowResult(true);
     onTimeRecorded(responseTime);
     
+    // Play appropriate sound
+    if (correct) {
+      soundManager.playSuccess();
+      soundManager.playStar();
+      setShowCelebration(true);
+    } else {
+      soundManager.playError();
+    }
+    
     setTimeout(() => {
+      setShowCelebration(false);
       onAnswer(correct);
     }, 2000);
   };
 
   const handleReset = () => {
+    soundManager.playClick();
     setPlacedTiles([]);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[600px] p-6">
+    <div className="flex flex-col items-center justify-center min-h-[600px] p-6 relative">
+      {/* Celebration effects */}
+      <Celebration show={showCelebration} type="big" />
+      <FloatingStars show={showCelebration} count={8} />
+      
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

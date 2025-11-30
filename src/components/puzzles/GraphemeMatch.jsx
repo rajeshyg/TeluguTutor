@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Sparkles } from 'lucide-react';
+import { soundManager } from '@/utils/sounds';
+import { Celebration, FloatingStars } from '@/components/learning/Celebration';
 
 export default function GraphemeMatch({ 
   targetGrapheme, 
@@ -13,24 +15,46 @@ export default function GraphemeMatch({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [startTime] = useState(Date.now());
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleSelect = (option) => {
     const responseTime = Date.now() - startTime;
     const correct = option.glyph === targetGrapheme.glyph;
-    
+
     setSelected(option);
     setIsCorrect(correct);
     setShowResult(true);
-    
+
+    // Play appropriate sound
+    if (correct) {
+      // Play one of several success sounds randomly
+      const successSounds = [
+        () => soundManager.playSuccess(),
+        () => soundManager.playStar(),
+        () => soundManager.playFanfare()
+      ];
+      const idx = Math.floor(Math.random() * successSounds.length);
+      successSounds[idx]();
+      setShowCelebration(true);
+    } else {
+      // Always play the same error sound
+      soundManager.playError();
+    }
+
     onTimeRecorded(responseTime);
-    
+
     setTimeout(() => {
+      setShowCelebration(false);
       onAnswer(correct);
     }, 1500);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+    <div className="flex flex-col items-center justify-center min-h-[500px] p-6 relative">
+      {/* Celebration effects */}
+      <Celebration show={showCelebration} type="confetti" />
+      <FloatingStars show={showCelebration} count={5} />
+      
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

@@ -82,6 +82,30 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginWithUsername = async (username) => {
+    try {
+      setError(null);
+      setLoading(true);
+      const userData = await base44.auth.loginWithUsername(username);
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUsers = async () => {
+    try {
+      return await base44.auth.getUsers();
+    } catch (err) {
+      setError(err.message);
+      return [];
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -92,6 +116,8 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     continueAsGuest,
+    loginWithUsername,
+    getUsers,
     clearError: () => setError(null)
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Users, Sparkles, ArrowRight, Plus, LogIn } from 'lucide-react';
+import { User, Users, Sparkles, ArrowRight, Plus, LogIn, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,8 @@ import { createPageUrl } from '@/utils';
 
 export default function Login() {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [confirmName, setConfirmName] = useState('');
   const [existingUsers, setExistingUsers] = useState([]);
   const [showRegister, setShowRegister] = useState(false);
@@ -16,7 +18,7 @@ export default function Login() {
   const [formError, setFormError] = useState('');
   const [registerStep, setRegisterStep] = useState('form'); // 'form' or 'confirm'
   
-  const { loginWithUsername, continueAsGuest, getUsers, loading, error } = useAuth();
+  const { loginWithUsername, continueAsGuest, getUsers, register, loading, error } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +55,21 @@ export default function Login() {
       setFormError('Please enter your name (at least 2 characters)');
       return;
     }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setFormError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate phone
+    const phoneClean = phone.replace(/[\s\-\(\)]/g, '');
+    const phoneRegex = /^[0-9]{10,15}$/;
+    if (!phone.trim() || !phoneRegex.test(phoneClean)) {
+      setFormError('Please enter a valid phone number (10-15 digits)');
+      return;
+    }
     
     // Check if user already exists
     const userExists = existingUsers.some(u => u.name.toLowerCase() === username.trim().toLowerCase());
@@ -74,7 +91,7 @@ export default function Login() {
     }
     
     try {
-      await loginWithUsername(username.trim());
+      await register(email.trim(), phone.trim(), username.trim());
       navigate(createPageUrl('Home'));
     } catch (err) {
       setFormError(err.message);
@@ -104,6 +121,8 @@ export default function Login() {
     setShowNewUser(false);
     setRegisterStep('form');
     setUsername('');
+    setEmail('');
+    setPhone('');
     setConfirmName('');
     setFormError('');
   };
@@ -205,30 +224,76 @@ export default function Login() {
               <form onSubmit={showRegister ? handleRegister : handleLogin} className="space-y-4">
                 {/* Name Input */}
                 {registerStep === 'form' && (
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      What's your name?
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Enter your name"
-                        autoFocus
-                        className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground text-lg"
-                      />
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        What's your name? <span className="text-destructive">*</span>
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Enter your name"
+                          autoFocus
+                          className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground text-lg"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Email Input - only for registration */}
+                    {showRegister && (
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          Email address <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="your@email.com"
+                            className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground text-lg"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Phone Input - only for registration */}
+                    {showRegister && (
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          Phone number <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="1234567890"
+                            className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground text-lg"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Confirmation Step */}
                 {showRegister && registerStep === 'confirm' && (
                   <>
-                    <div className="p-4 bg-secondary/50 border border-border rounded-xl">
+                    <div className="p-4 bg-secondary/50 border border-border rounded-xl space-y-2">
                       <p className="text-sm text-muted-foreground mb-2">You're registering as:</p>
                       <p className="text-xl font-bold text-foreground">{username}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Mail className="w-4 h-4" /> {email}
+                      </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Phone className="w-4 h-4" /> {phone}
+                      </p>
                     </div>
 
                     <div>

@@ -55,6 +55,21 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const register = async (email, phone, name, password = null) => {
+    try {
+      setError(null);
+      setLoading(true);
+      const userData = await base44.auth.register(email, phone, name, password);
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       setLoading(true);
@@ -114,6 +129,7 @@ export function AuthProvider({ children }) {
     isGuest: user?.isGuest || false,
     login,
     signup,
+    register,
     logout,
     continueAsGuest,
     loginWithUsername,

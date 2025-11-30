@@ -1,5 +1,29 @@
 import { TELUGU_GRAPHEMES } from '../data/teluguGraphemes';
+import { authApi, profileApi, masteryApi, practiceApi, getToken } from './apiClient';
 
+// Flag to check if backend is available
+let useBackend = true;
+let backendChecked = false;
+
+// Check if backend is available
+const checkBackend = async () => {
+  if (backendChecked) return useBackend;
+  
+  try {
+    const response = await fetch('http://localhost:3003/api/health', { 
+      method: 'GET',
+      signal: AbortSignal.timeout(2000)
+    });
+    useBackend = response.ok;
+  } catch (error) {
+    console.warn('Backend not available, using local storage fallback');
+    useBackend = false;
+  }
+  backendChecked = true;
+  return useBackend;
+};
+
+// LocalStorage fallback (existing implementation)
 const STORAGE_KEYS = {
   MASTERY: 'telugu_tutor_mastery',
   PROFILE: 'telugu_tutor_profile',
@@ -8,7 +32,6 @@ const STORAGE_KEYS = {
   USERS: 'telugu_tutor_users'
 };
 
-// Generate a simple user ID from username
 const generateUserId = (username) => {
   return `user_${username.toLowerCase().replace(/\s+/g, '_')}`;
 };
@@ -29,27 +52,15 @@ const removeStorage = (key) => {
   localStorage.removeItem(key);
 };
 
-// Simple hash function for passwords (NOT for production - use bcrypt in real apps)
-const simpleHash = (str) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString(16);
-};
-
-const defaultBase44 = {
+// Local storage fallback implementation
+const localStorageFallback = {
   auth: {
-    // Get currently logged in user
     me: async () => {
       const currentUser = getStorage(STORAGE_KEYS.CURRENT_USER, null);
       if (!currentUser) {
         return null;
       }
       
-      // Ensure profile exists for current user
       const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
       let profile = profiles.find(p => p.user_email === currentUser.email);
       
@@ -70,7 +81,6 @@ const defaultBase44 = {
       return { email: currentUser.email, name: profile.display_name };
     },
     
-    // Simple login with just username (creates account if doesn't exist)
     loginWithUsername: async (username) => {
       if (!username || username.trim().length < 2) {
         throw new Error('Please enter a name (at least 2 characters)');
@@ -80,21 +90,18 @@ const defaultBase44 = {
       const userId = generateUserId(trimmedName);
       const users = getStorage(STORAGE_KEYS.USERS, []);
       
-      // Find existing user or create new one
       let user = users.find(u => u.id === userId || u.name?.toLowerCase() === trimmedName.toLowerCase());
       
       if (!user) {
-        // Create new user
         user = {
           id: userId,
-          email: userId, // Use ID as email for compatibility
+          email: userId,
           name: trimmedName,
           createdAt: new Date().toISOString()
         };
         users.push(user);
         setStorage(STORAGE_KEYS.USERS, users);
         
-        // Create profile for new user
         const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
         const profile = {
           user_email: userId,
@@ -109,32 +116,22 @@ const defaultBase44 = {
         setStorage(STORAGE_KEYS.PROFILE, profiles);
       }
       
-      // Set current user
       const userData = { email: user.email || user.id, name: user.name };
       setStorage(STORAGE_KEYS.CURRENT_USER, userData);
       
       return userData;
     },
     
-    // Get list of all users (for user selection)
     getUsers: async () => {
       const users = getStorage(STORAGE_KEYS.USERS, []);
       return users.map(u => ({ id: u.id || u.email, name: u.name }));
     },
     
-    // Sign up a new user (legacy - now uses loginWithUsername)
     signup: async (email, password, displayName) => {
-      if (!displayName && !email) {
-        throw new Error('Name is required');
-      }
-      
-      // Use the simple username login instead
-      return defaultBase44.auth.loginWithUsername(displayName || email);
+      return localStorageFallback.auth.loginWithUsername(displayName || email);
     },
     
-    // Login existing user (legacy - for backward compatibility)
     login: async (email, password) => {
-      // For backward compatibility, try to find user by email
       const users = getStorage(STORAGE_KEYS.USERS, []);
       const user = users.find(u => u.email === email);
       
@@ -144,23 +141,19 @@ const defaultBase44 = {
         return userData;
       }
       
-      // Otherwise, treat email as username
-      return defaultBase44.auth.loginWithUsername(email);
+      return localStorageFallback.auth.loginWithUsername(email);
     },
     
-    // Logout current user
     logout: async () => {
       removeStorage(STORAGE_KEYS.CURRENT_USER);
       return true;
     },
     
-    // Continue as guest (creates temporary session)
     continueAsGuest: async () => {
       const guestEmail = `guest_${Date.now()}@telugututor.local`;
       const userData = { email: guestEmail, name: 'Guest Learner', isGuest: true };
       setStorage(STORAGE_KEYS.CURRENT_USER, userData);
       
-      // Create guest profile
       const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
       const profile = {
         user_email: guestEmail,
@@ -174,6 +167,43 @@ const defaultBase44 = {
       };
       profiles.push(profile);
       setStorage(STORAGE_KEYS.PROFILE, profiles);
+      
+      return userData;
+    },
+
+    register: async (email, phone, name, password) => {
+      const userId = generateUserId(name);
+      const users = getStorage(STORAGE_KEYS.USERS, []);
+      
+      if (users.find(u => u.email === email)) {
+        throw new Error('Email already registered');
+      }
+
+      const user = {
+        id: userId,
+        email: email,
+        phone: phone,
+        name: name,
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      setStorage(STORAGE_KEYS.USERS, users);
+      
+      const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+      const profile = {
+        user_email: email,
+        display_name: name,
+        total_stars: 0,
+        total_practice_time: 0,
+        badges_earned: [],
+        unlocked_word_puzzles: false,
+        last_active: new Date().toISOString()
+      };
+      profiles.push(profile);
+      setStorage(STORAGE_KEYS.PROFILE, profiles);
+      
+      const userData = { email, phone, name };
+      setStorage(STORAGE_KEYS.CURRENT_USER, userData);
       
       return userData;
     }
@@ -198,12 +228,8 @@ const defaultBase44 = {
         return profiles;
       },
       update: async (id, updates) => {
-        // In this mock, id is effectively the email or we find by email in the updates if provided, 
-        // but usually update takes an ID. Let's assume we find by email for simplicity or the caller passes email.
-        // Actually, the caller in Home.jsx uses filter. 
-        // Let's assume 'id' is the user_email for this mock since we don't have real IDs.
         const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-        const index = profiles.findIndex(p => p.user_email === id); // id passed as email
+        const index = profiles.findIndex(p => p.user_email === id);
         if (index !== -1) {
           profiles[index] = { ...profiles[index], ...updates };
           setStorage(STORAGE_KEYS.PROFILE, profiles);
@@ -245,22 +271,14 @@ const defaultBase44 = {
         all.push(newItem);
         setStorage(STORAGE_KEYS.SESSIONS, all);
         
-        // Update practice time in profile
         if (data.response_time) {
-           const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
-           const profileIndex = profiles.findIndex(p => p.user_email === data.user_email);
-           if (profileIndex !== -1) {
-             // Convert ms to minutes (approx)
-             const minutes = data.response_time / 60000;
-             // We'll just add 1 minute for every session for simplicity or accumulate
-             // Let's accumulate properly
-             const currentMinutes = profiles[profileIndex].total_practice_time || 0;
-             // Add a small amount, e.g. 0.1 minutes per question if response_time is small
-             // Or just increment by 1 for every X questions. 
-             // Let's just add 1/10th of a minute for each question for now to show progress
-             profiles[profileIndex].total_practice_time = parseFloat((currentMinutes + 0.1).toFixed(1));
-             setStorage(STORAGE_KEYS.PROFILE, profiles);
-           }
+          const profiles = getStorage(STORAGE_KEYS.PROFILE, []);
+          const profileIndex = profiles.findIndex(p => p.user_email === data.user_email);
+          if (profileIndex !== -1) {
+            const currentMinutes = profiles[profileIndex].total_practice_time || 0;
+            profiles[profileIndex].total_practice_time = parseFloat((currentMinutes + 0.1).toFixed(1));
+            setStorage(STORAGE_KEYS.PROFILE, profiles);
+          }
         }
         
         return newItem;
@@ -269,14 +287,186 @@ const defaultBase44 = {
   }
 };
 
-// Use a Proxy to allow dynamic switching of the implementation (e.g. for testing)
-export const base44 = new Proxy({}, {
-  get: (target, prop) => {
-    const implementation = (typeof window !== 'undefined' && window.base44) ? window.base44 : defaultBase44;
-    return implementation[prop];
-  }
-});
+// Backend API implementation
+const backendApi = {
+  auth: {
+    me: async () => {
+      const user = await authApi.me();
+      if (user) {
+        return { email: user.email, name: user.name, isGuest: user.isGuest };
+      }
+      return null;
+    },
+    
+    loginWithUsername: async (username) => {
+      return authApi.loginWithUsername(username);
+    },
+    
+    getUsers: async () => {
+      return authApi.getUsers();
+    },
+    
+    signup: async (email, password, displayName) => {
+      return authApi.register(email, '0000000000', displayName, password);
+    },
+    
+    login: async (email, password) => {
+      return authApi.login(email, password);
+    },
+    
+    logout: async () => {
+      return authApi.logout();
+    },
+    
+    continueAsGuest: async () => {
+      return authApi.continueAsGuest();
+    },
 
-if (typeof window !== 'undefined' && !window.base44) {
-  window.base44 = defaultBase44; // Initialize with default if not present
+    register: async (email, phone, name, password) => {
+      return authApi.register(email, phone, name, password);
+    }
+  },
+  entities: {
+    TeluguGrapheme: {
+      filter: async (params) => {
+        let results = TELUGU_GRAPHEMES;
+        if (params && params.module) {
+          results = results.filter(g => g.module === params.module);
+        }
+        return results;
+      },
+      list: async () => TELUGU_GRAPHEMES
+    },
+    UserProfile: {
+      filter: async (params) => {
+        try {
+          const profile = await profileApi.get();
+          return profile ? [profile] : [];
+        } catch {
+          return [];
+        }
+      },
+      update: async (id, updates) => {
+        return profileApi.update(updates);
+      }
+    },
+    GraphemeMastery: {
+      filter: async (params) => {
+        try {
+          if (params?.needs_adaptive_practice) {
+            return masteryApi.getAdaptive();
+          }
+          return masteryApi.getAll();
+        } catch {
+          return [];
+        }
+      },
+      create: async (data) => {
+        return masteryApi.update(data.grapheme_id, data);
+      },
+      update: async (id, updates) => {
+        const graphemeId = updates.grapheme_id || id;
+        return masteryApi.update(graphemeId, updates);
+      }
+    },
+    PracticeSession: {
+      create: async (data) => {
+        return practiceApi.create(
+          data.grapheme_id,
+          data.is_correct,
+          data.response_time,
+          data.puzzle_type
+        );
+      }
+    }
+  }
+};
+
+// Dynamic base44 implementation that checks backend availability
+const createBase44 = () => {
+  return {
+    auth: {
+      me: async () => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.me() : localStorageFallback.auth.me();
+      },
+      loginWithUsername: async (username) => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.loginWithUsername(username) : localStorageFallback.auth.loginWithUsername(username);
+      },
+      getUsers: async () => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.getUsers() : localStorageFallback.auth.getUsers();
+      },
+      signup: async (email, password, displayName) => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.signup(email, password, displayName) : localStorageFallback.auth.signup(email, password, displayName);
+      },
+      login: async (email, password) => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.login(email, password) : localStorageFallback.auth.login(email, password);
+      },
+      logout: async () => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.logout() : localStorageFallback.auth.logout();
+      },
+      continueAsGuest: async () => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.continueAsGuest() : localStorageFallback.auth.continueAsGuest();
+      },
+      register: async (email, phone, name, password) => {
+        await checkBackend();
+        return useBackend ? backendApi.auth.register(email, phone, name, password) : localStorageFallback.auth.register(email, phone, name, password);
+      }
+    },
+    entities: {
+      TeluguGrapheme: {
+        filter: async (params) => {
+          let results = TELUGU_GRAPHEMES;
+          if (params && params.module) {
+            results = results.filter(g => g.module === params.module);
+          }
+          return results;
+        },
+        list: async () => TELUGU_GRAPHEMES
+      },
+      UserProfile: {
+        filter: async (params) => {
+          await checkBackend();
+          return useBackend ? backendApi.entities.UserProfile.filter(params) : localStorageFallback.entities.UserProfile.filter(params);
+        },
+        update: async (id, updates) => {
+          await checkBackend();
+          return useBackend ? backendApi.entities.UserProfile.update(id, updates) : localStorageFallback.entities.UserProfile.update(id, updates);
+        }
+      },
+      GraphemeMastery: {
+        filter: async (params) => {
+          await checkBackend();
+          return useBackend ? backendApi.entities.GraphemeMastery.filter(params) : localStorageFallback.entities.GraphemeMastery.filter(params);
+        },
+        create: async (data) => {
+          await checkBackend();
+          return useBackend ? backendApi.entities.GraphemeMastery.create(data) : localStorageFallback.entities.GraphemeMastery.create(data);
+        },
+        update: async (id, updates) => {
+          await checkBackend();
+          return useBackend ? backendApi.entities.GraphemeMastery.update(id, updates) : localStorageFallback.entities.GraphemeMastery.update(id, updates);
+        }
+      },
+      PracticeSession: {
+        create: async (data) => {
+          await checkBackend();
+          return useBackend ? backendApi.entities.PracticeSession.create(data) : localStorageFallback.entities.PracticeSession.create(data);
+        }
+      }
+    }
+  };
+};
+
+export const base44 = createBase44();
+
+// Also export for window global access
+if (typeof window !== 'undefined') {
+  window.base44 = base44;
 }

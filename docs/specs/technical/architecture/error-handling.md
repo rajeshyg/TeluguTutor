@@ -324,13 +324,13 @@ All routes have been updated to use standardized error handling:
 
 ```bash
 # Test invalid credentials
-curl -X POST http://localhost:3001/api/auth/login \
+curl -X POST http://localhost:3003/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"wrong"}'
 # Expected: 401 with AUTH_INVALID_CREDENTIALS
 
 # Test missing field
-curl -X POST http://localhost:3001/api/auth/login \
+curl -X POST http://localhost:3003/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com"}'
 # Expected: 400 with VALIDATION_MISSING_FIELD

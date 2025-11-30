@@ -26,6 +26,10 @@ playwright-report/
 # Vite
 .vite
 
+# Database
+data/*.db
+data/*.db-journal
+
 # Misc
 *.local
 *.sublime-workspace

@@ -47,7 +47,7 @@ export default function Layout() {
               {user && (
                 <button
                   onClick={handleLogout}
-                  className="ml-2 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors shadow-sm"
+                  className="ml-2 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors border border-red-200 dark:border-red-800"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />

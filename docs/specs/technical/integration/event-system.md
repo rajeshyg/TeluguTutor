@@ -22,7 +22,7 @@ import { Server } from 'socket.io';
 export function initializeChatSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: process.env.CLIENT_URL || 'http://localhost:5175',
       methods: ['GET', 'POST'],
       credentials: true
     },
@@ -183,7 +183,7 @@ socketHelpers.sendToUser(io, userId, 'conversation:added', {
 ```javascript
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3001', {
+const socket = io('http://localhost:3003', {
   auth: {
     token: localStorage.getItem('authToken')
   }

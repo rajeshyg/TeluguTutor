@@ -22,7 +22,7 @@ Create a `.env` file in the project root:
 ```bash
 # Application
 NODE_ENV=development
-PORT=3001
+PORT=3003
 
 # Database
 DB_HOST=localhost
@@ -42,9 +42,9 @@ SMTP_USER=apikey
 SMTP_PASS=your_sendgrid_api_key
 
 # Frontend URL
-CLIENT_URL=http://localhost:5173
-CORS_ORIGIN=http://localhost:5173
-VITE_API_URL=http://localhost:3001
+CLIENT_URL=http://localhost:5175
+CORS_ORIGIN=http://localhost:5175
+VITE_API_URL=http://localhost:3003
 ```
 
 ### Starting Development Server
@@ -108,7 +108,7 @@ CLIENT_URL=https://yourdomain.com
 | Variable | Development | Staging | Production | Description |
 |----------|------------|---------|------------|-------------|
 | `NODE_ENV` | development | staging | production | Runtime environment |
-| `PORT` | 3001 | auto | auto | Server port |
+| `PORT` | 3003 | auto | auto | Server port |
 | `JWT_SECRET` | dev-secret | secure | secure | JWT signing key |
 | `DATABASE_URL` | local | managed | managed | Database connection |
 | `CORS_ORIGIN` | localhost | staging-url | prod-url | Allowed origins |

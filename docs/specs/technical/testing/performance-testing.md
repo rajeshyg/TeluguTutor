@@ -106,7 +106,7 @@ const performanceBudgets = {
 
 ```bash
 # Run Lighthouse audit
-npx lighthouse http://localhost:5173 --output json --output-path ./lighthouse-report.json
+npx lighthouse http://localhost:5175 --output json --output-path ./lighthouse-report.json
 
 # Automated CI check
 npm run test:lighthouse

@@ -2,15 +2,16 @@
   "name": "telugu-tutor-server",
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend server for Telugu Tutor with SQLite database",
+  "description": "Backend server for Telugu Tutor with Supabase (PostgreSQL)",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
+    "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2"
   }
 }

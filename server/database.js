@@ -14,100 +14,140 @@ const db = new Database(dbPath);
 db.pragma('foreign_keys = ON');
 
 // Initialize database schema
-function initializeDatabase() {
-  // Users table with username as primary login identifier
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT,
-      phone TEXT,
-      name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      is_guest INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  
-  // Add username column if it doesn't exist (migration for existing databases)
-  try {
-    db.exec(`ALTER TABLE users ADD COLUMN username TEXT`);
-  } catch (e) {
-    // Column already exists, ignore
+const migrations = [
+  {
+    version: 1,
+    name: 'initial_schema',
+    up: (db) => {
+      // Users table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT UNIQUE NOT NULL,
+          email TEXT,
+          phone TEXT,
+          name TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          is_guest INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Migration for existing databases that might miss the username column
+      try {
+        db.exec(`ALTER TABLE users ADD COLUMN username TEXT`);
+      } catch (e) {
+        // Column already exists, ignore
+      }
+
+      // Backfill username from email if missing
+      db.exec(`UPDATE users SET username = email WHERE username IS NULL`);
+
+      // User profiles table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER UNIQUE NOT NULL,
+          display_name TEXT,
+          age INTEGER,
+          current_module TEXT DEFAULT 'hallulu',
+          total_stars INTEGER DEFAULT 0,
+          total_practice_time REAL DEFAULT 0,
+          badges_earned TEXT DEFAULT '[]',
+          unlocked_word_puzzles INTEGER DEFAULT 0,
+          last_active TEXT,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Grapheme mastery table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS grapheme_mastery (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          grapheme_id TEXT NOT NULL,
+          confidence_score REAL DEFAULT 0,
+          accuracy_rate REAL DEFAULT 0,
+          total_attempts INTEGER DEFAULT 0,
+          successful_attempts INTEGER DEFAULT 0,
+          consecutive_successes INTEGER DEFAULT 0,
+          last_practiced TEXT,
+          mastery_level TEXT DEFAULT 'not_started',
+          average_response_time REAL,
+          needs_adaptive_practice INTEGER DEFAULT 0,
+          struggle_count INTEGER DEFAULT 0,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE(user_id, grapheme_id)
+        )
+      `);
+
+      // Practice sessions table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS practice_sessions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          grapheme_id TEXT NOT NULL,
+          is_correct INTEGER NOT NULL,
+          response_time INTEGER,
+          puzzle_type TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Sessions table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS sessions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          token TEXT UNIQUE NOT NULL,
+          expires_at TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+    }
   }
-  
-  // Update existing users without username to use email as username
-  db.exec(`
-    UPDATE users SET username = email WHERE username IS NULL
-  `);
+  // Add future migrations here, e.g.:
+  // {
+  //   version: 2,
+  //   name: 'add_preferences',
+  //   up: (db) => db.exec('ALTER TABLE users ADD COLUMN preferences TEXT')
+  // }
+];
 
-  // User profiles table (for learning progress)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS user_profiles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER UNIQUE NOT NULL,
-      display_name TEXT,
-      age INTEGER,
-      current_module TEXT DEFAULT 'hallulu',
-      total_stars INTEGER DEFAULT 0,
-      total_practice_time REAL DEFAULT 0,
-      badges_earned TEXT DEFAULT '[]',
-      unlocked_word_puzzles INTEGER DEFAULT 0,
-      last_active TEXT,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `);
+function initializeDatabase() {
+  const currentVersion = db.pragma('user_version', { simple: true });
+  console.log(`Current database version: ${currentVersion}`);
 
-  // Grapheme mastery table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS grapheme_mastery (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      grapheme_id TEXT NOT NULL,
-      confidence_score REAL DEFAULT 0,
-      accuracy_rate REAL DEFAULT 0,
-      total_attempts INTEGER DEFAULT 0,
-      successful_attempts INTEGER DEFAULT 0,
-      consecutive_successes INTEGER DEFAULT 0,
-      last_practiced TEXT,
-      mastery_level TEXT DEFAULT 'not_started',
-      average_response_time REAL,
-      needs_adaptive_practice INTEGER DEFAULT 0,
-      struggle_count INTEGER DEFAULT 0,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      UNIQUE(user_id, grapheme_id)
-    )
-  `);
+  let versionUpdated = false;
 
-  // Practice sessions table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS practice_sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      grapheme_id TEXT NOT NULL,
-      is_correct INTEGER NOT NULL,
-      response_time INTEGER,
-      puzzle_type TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `);
+  for (const migration of migrations) {
+    if (migration.version > currentVersion) {
+      console.log(`Applying migration ${migration.version}: ${migration.name}...`);
+      
+      const runMigration = db.transaction(() => {
+        migration.up(db);
+        db.pragma(`user_version = ${migration.version}`);
+      });
 
-  // Sessions table for authentication tokens
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      token TEXT UNIQUE NOT NULL,
-      expires_at TEXT NOT NULL,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `);
+      try {
+        runMigration();
+        console.log(`Migration ${migration.version} applied successfully.`);
+        versionUpdated = true;
+      } catch (error) {
+        console.error(`Failed to apply migration ${migration.version}:`, error);
+        throw error; // Stop startup if migration fails
+      }
+    }
+  }
 
-  console.log('Database initialized successfully at:', dbPath);
+  if (!versionUpdated) {
+    console.log('Database is up to date.');
+  }
 }
+
 
 // Simple password hashing (for production, use bcrypt)
 function hashPassword(password) {
